@@ -1,0 +1,22 @@
+{
+  "name": "llm-hooks",
+  "version": "1.0.0",
+  "author": {
+    "name": "BHznJNs",
+    "email": "BHznJNs@outlook.com"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "hono": "^4.9.2",
+    "pino": "^9.9.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@types/node": "^24.3.0",
+    "ultracite": "^5.2.3"
+  }
+}
