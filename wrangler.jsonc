@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "llm-hooks",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-08-16",
+  "observability": {
+    "enabled": true
+  },
+  "find_additional_modules": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": ["./plugins/*.js"],
+      "fallthrough": true
+    }
+  ]
+}

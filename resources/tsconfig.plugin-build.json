@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "rootDir": "../plugins",
+    "outDir": "../plugins",
+    "target": "es6",
+    "module": "commonjs"
+  },
+  "include": ["../plugins/*.ts"],
+  "exclude": ["node_modules"]
+}

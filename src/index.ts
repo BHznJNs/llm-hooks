@@ -1,12 +1,11 @@
-// biome-ignore lint/style/noExportedImports: exports cloudflare worker app
+// biome-ignore lint/style/noExportedImports: exports app for cloudflare worker
 import app from './app.ts';
-// export hono app for cloudflare worker
 export default app;
 
 import pino from 'pino';
+import { runtime } from 'std-env';
 
-const isCloudflareWorkerEnv = process.env.NODE_ENV === 'production-cf';
-if (!isCloudflareWorkerEnv) {
+if (runtime !== 'workerd') {
   const honoNodeAdapter = await import('@hono/node-server');
   const DEFAULT_PORT = 5126;
   const logger = pino();

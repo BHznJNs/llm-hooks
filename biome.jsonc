@@ -1,6 +1,14 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
-  "extends": [
-    "ultracite"
-  ]
+  "extends": ["ultracite"],
+  "linter": {
+    "rules": {
+      "style": {
+        "useDefaultSwitchClause": "off"
+      },
+      "nursery": {
+        "noUnnecessaryConditions": "off"
+      }
+    }
+  }
 }
