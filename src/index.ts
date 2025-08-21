@@ -3,9 +3,9 @@ import app from './app.ts';
 export default app;
 
 import pino from 'pino';
-import { runtime } from 'std-env';
+import { runtime } from './utils/runtime.ts';
 
-if (runtime !== 'workerd') {
+async function nonWorkerMain() {
   const honoNodeAdapter = await import('@hono/node-server');
   const DEFAULT_PORT = 5126;
   const logger = pino();
@@ -19,4 +19,8 @@ if (runtime !== 'workerd') {
       logger.info(`Listening on http://localhost:${info.port}`);
     }
   );
+}
+
+if (runtime !== 'cf-worker') {
+  nonWorkerMain();
 }

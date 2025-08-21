@@ -17,6 +17,7 @@
     "@ai-sdk/openai": "^2.0.16",
     "@hono/node-server": "^1.19.0",
     "ai": "^5.0.18",
+    "env-paths": "^3.0.0",
     "hono": "^4.9.2",
     "pino": "^9.9.0",
     "std-env": "^3.9.0"

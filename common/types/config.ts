@@ -5,17 +5,25 @@ export type AppConfig = {
   language: string;
 
   upstream: {
-    base_url: string;
+    baseUrl: string;
     provider: LlmProvider;
   };
 
   assistant: {
-    base_url?: string;
+    baseUrl?: string;
     provider?: LlmProvider;
     model: string;
   };
+
+  hooks: HooksConfig;
 };
 
-// export type HooksConfig = {
-//   placeholder: any;
-// };
+// Use hooks config to store the order of hooks
+export type HooksConfig = {
+  beforeUpstreamRequest: string[];
+  onUpstreamChunk: string[];
+  beforeDownstreamResponse: string[];
+
+  onFetchModelList: string[];
+  onError: string[];
+};
