@@ -1,5 +1,3 @@
-import type { OpenAIModelListResponse } from './openai.js';
-
 declare type Plugin = {
   name: string;
   dependencies: string[];
@@ -8,6 +6,6 @@ declare type Plugin = {
   onUpstreamChunk?: (request: Request) => void;
   afterUpstreamResponse?: (response: Response) => Response | undefined;
   onFetchModelList?: (
-    modelList: OpenAIModelListResponse
-  ) => OpenAIModelListResponse;
+    modelList: OpenAI.ModelListResponse
+  ) => OpenAI.ModelListResponse;
 };

@@ -1,0 +1,244 @@
+/** biome-ignore-all lint/complexity/noBannedTypes: <explanation> */
+import type {
+  CallSettings,
+  FinishReason,
+  GenerateTextResult,
+  JSONValue,
+  LanguageModel,
+  ModelMessage,
+  Prompt,
+  StopCondition,
+  StreamTextResult,
+  TextStreamPart,
+  ToolChoice,
+  ToolSet,
+} from 'ai';
+import type { llmClientFactory } from '../llm-client-factory.ts';
+import { nullToUndefined, undefinedToNull } from './type-utils.ts';
+
+const finishReasonMap = new Map<
+  FinishReason,
+  OpenAI.ChatCompletionFinishReason
+>([
+  ['stop', 'stop'],
+  ['length', 'length'],
+  ['content-filter', 'content_filter'],
+  ['tool-calls', 'tool_calls'],
+  ['error', null],
+  ['other', null],
+  ['unknown', null],
+]);
+
+// biome-ignore lint/style/noNamespace: <explanation>
+export declare namespace AI_SDK_UTILS {
+  type ProviderOptions = Record<string, Record<string, JSONValue>>;
+  type ChatCompletionRequest<TOOLS extends ToolSet> = CallSettings &
+    Prompt & {
+      model: LanguageModel;
+      tools?: TOOLS;
+      toolChoice?: ToolChoice<NoInfer<TOOLS>>;
+      stopWhen?:
+        | StopCondition<NoInfer<TOOLS>>
+        | StopCondition<NoInfer<TOOLS>>[];
+      providerOptions?: ProviderOptions;
+      activeTools?: Array<keyof NoInfer<TOOLS>>;
+    };
+}
+
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+export class AI_SDK_UTILS {
+  static chatCompletionRequestParamsFactory(
+    client: ReturnType<typeof llmClientFactory>,
+    openAiRequestParams: OpenAI.ChatCompletionRequest
+  ): [boolean, AI_SDK_UTILS.ChatCompletionRequest<{}>] {
+    return [
+      Boolean(openAiRequestParams.stream),
+      {
+        model: client.chat(openAiRequestParams.model),
+        messages: openAiRequestParams.messages as ModelMessage[],
+
+        temperature: nullToUndefined(openAiRequestParams.temperature),
+        maxOutputTokens: nullToUndefined(
+          openAiRequestParams.max_completion_tokens
+        ),
+        topP: nullToUndefined(openAiRequestParams.top_p),
+        frequencyPenalty: nullToUndefined(
+          openAiRequestParams.frequency_penalty
+        ),
+        presencePenalty: nullToUndefined(openAiRequestParams.presence_penalty),
+        stopSequences:
+          typeof openAiRequestParams.stop === 'string'
+            ? [openAiRequestParams.stop]
+            : nullToUndefined(openAiRequestParams.stop),
+        seed: nullToUndefined(openAiRequestParams.seed),
+
+        tools: nullToUndefined(openAiRequestParams.tools),
+        toolChoice: nullToUndefined(
+          openAiRequestParams.tool_choice
+        ) as ToolChoice<{}>,
+
+        providerOptions: {
+          openai: {
+            user: undefinedToNull(openAiRequestParams.safety_identifier),
+            logitBias: undefinedToNull(openAiRequestParams.logit_bias),
+            logprobs: undefinedToNull(openAiRequestParams.logprobs),
+            parallelToolCalls: undefinedToNull(
+              openAiRequestParams.parallel_tool_calls
+            ),
+            verbosity: undefinedToNull(openAiRequestParams.verbosity),
+          },
+        },
+      },
+    ];
+  }
+
+  static chatCompletionChunkProcessor(
+    chunk: TextStreamPart<{}>
+  ):
+    | OpenAI.ChatCompletionResponseChunk
+    | OpenAI.ChatCompletionResponseErrorChunk
+    | null {
+    const SECOND = 1000;
+    let chatId: string | null = null;
+    const created = Math.floor(Date.now() / SECOND);
+    switch (chunk.type) {
+      case 'text-start': {
+        chatId = chunk.id;
+        return {
+          id: chatId!,
+          created,
+          object: 'chat.completion.chunk',
+          model: '',
+          choices: [
+            { index: 0, delta: { role: 'assistant' }, finish_reason: null },
+          ],
+        };
+      }
+      case 'text-delta': {
+        return {
+          id: chatId!,
+          created,
+          object: 'chat.completion.chunk',
+          model: '',
+          choices: [
+            {
+              index: 0,
+              delta: { content: chunk.text },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'text-end': {
+        return {
+          id: chatId!,
+          created,
+          model: '',
+          object: 'chat.completion.chunk',
+          choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+        };
+      }
+      case 'error': {
+        return {
+          id: chatId!,
+          created,
+          model: '',
+          object: 'chat.completion.chunk',
+          choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+          error: {
+            message: JSON.stringify(chunk.error),
+            type: 'upstream_error',
+          },
+        };
+      }
+      case 'finish': {
+        const aiSdkUsageData = chunk.totalUsage;
+        return {
+          id: chatId!,
+          created,
+          model: '',
+          object: 'chat.completion.chunk',
+          choices: [
+            {
+              index: 0,
+              delta: {},
+              finish_reason: finishReasonMap.get(chunk.finishReason) ?? null,
+            },
+          ],
+          usage: {
+            prompt_tokens: aiSdkUsageData.inputTokens!,
+            completion_tokens: aiSdkUsageData.outputTokens!,
+            total_tokens: aiSdkUsageData.totalTokens!,
+          },
+        };
+      }
+    }
+    return null;
+  }
+
+  static chatCompletionStreamResponseFactory(
+    result: StreamTextResult<{}, string>
+  ): ReadableStream<OpenAI.ChatCompletionResponseChunk> {
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.fullStream) {
+            const openaiChunk =
+              AI_SDK_UTILS.chatCompletionChunkProcessor(chunk);
+            if (openaiChunk === null) {
+              continue;
+            }
+            controller.enqueue(openaiChunk);
+          }
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+    return stream;
+  }
+
+  static chatCompletionNonStreamResponseFactory(
+    reqBody: OpenAI.ChatCompletionRequest,
+    result: GenerateTextResult<{}, string>
+  ): OpenAI.ChatCompletionResponse {
+    const SECOND = 1000;
+    const created = Math.floor(Date.now() / SECOND);
+    return {
+      id: `chatcmpl-${created}`,
+      object: 'chat.completion',
+      created,
+      model: reqBody.model,
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: result.text,
+            refusal: null,
+            tool_calls: result.toolCalls.map(
+              (toolCall) =>
+                ({
+                  id: toolCall.toolCallId,
+                  type: 'function',
+                  function: {
+                    name: toolCall.toolName,
+                    arguments: String(toolCall.input),
+                  },
+                }) satisfies OpenAI.ChatCompletionResponseToolCall
+            ),
+          },
+          finish_reason: finishReasonMap.get(result.finishReason) ?? 'stop',
+          logprobs: null,
+        },
+      ],
+      usage: {
+        prompt_tokens: result.usage?.inputTokens || 0,
+        completion_tokens: result.usage?.outputTokens || 0,
+        total_tokens: result.usage?.totalTokens || 0,
+      },
+    };
+  }
+}

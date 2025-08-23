@@ -4,7 +4,8 @@
   "linter": {
     "rules": {
       "style": {
-        "useDefaultSwitchClause": "off"
+        "useDefaultSwitchClause": "off",
+        "noNonNullAssertion": "off"
       },
       "nursery": {
         "noUnnecessaryConditions": "off"

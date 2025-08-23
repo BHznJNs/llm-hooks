@@ -1,7 +1,12 @@
+import { generateText, streamText } from 'ai';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { ChatCompletionRequest } from '../common/types/index.ts';
+import { stream } from 'hono/streaming';
+import { llmClientFactory } from './llm-client-factory.ts';
 import { loadConfig } from './load-config.ts';
+import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
+import { extractAuthToken } from './utils/field-utils.ts';
+import { UNAUTHORIZED } from './utils/response-code.ts';
 
 const app = new Hono();
 const config = await loadConfig();
@@ -27,12 +32,37 @@ app.get('/v1/models', async (c) => {
     method: 'GET',
     headers: proxyHeaders,
   });
-  return c.json(await upstreamResp.json());
+  const modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
+  return c.json(modelList);
 });
 
 app.post('/v1/chat/completions', async (c) => {
-  const body = await c.req.json<ChatCompletionRequest>();
-  return c.json(body);
+  const authToken = extractAuthToken(c);
+  if (!authToken) {
+    return c.json({ error: 'Unauthorized' }, UNAUTHORIZED);
+  }
+
+  const client = llmClientFactory(
+    config.upstream.provider,
+    authToken,
+    config.upstream.baseUrl
+  );
+  const body = await c.req.json<OpenAI.ChatCompletionRequest>();
+  const [isStream, requestParams] =
+    AI_SDK_UTILS.chatCompletionRequestParamsFactory(client, body);
+
+  if (isStream) {
+    const result = streamText(requestParams);
+    const chatCompletionStream =
+      AI_SDK_UTILS.chatCompletionStreamResponseFactory(result);
+    return stream(c, async (s) => {
+      return await s.pipe(chatCompletionStream);
+    });
+  }
+  const result = await generateText(requestParams);
+  const chatCompletionResponse =
+    AI_SDK_UTILS.chatCompletionNonStreamResponseFactory(body, result);
+  return c.json(chatCompletionResponse);
 });
 
 export default app;

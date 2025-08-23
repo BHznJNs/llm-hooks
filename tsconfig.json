@@ -19,5 +19,5 @@
     "allowImportingTsExtensions": true,
     "strictNullChecks": true
   },
-  "include": ["plugins/**/*", "common/types/**/*"]
+  "include": ["src/**/*", "plugins/**/*", "common/types/**/*"]
 }

@@ -2,13 +2,13 @@
 import app from './app.ts';
 export default app;
 
-import pino from 'pino';
+import { logger as globalLogger } from './utils/logger.ts';
 import { runtime } from './utils/runtime.ts';
 
 async function nonWorkerMain() {
   const honoNodeAdapter = await import('@hono/node-server');
   const DEFAULT_PORT = 5126;
-  const logger = pino();
+  const logger = globalLogger.moduleLogger('main');
   const port = process.env.PORT ?? DEFAULT_PORT;
   honoNodeAdapter.serve(
     {
