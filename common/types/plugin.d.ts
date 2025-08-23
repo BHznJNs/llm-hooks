@@ -1,6 +1,5 @@
 declare type Plugin = {
-  name: string;
-  dependencies: string[];
+  params?: Record<string, unknown>;
 
   beforeUpstreamRequest?: (request: Request) => Request | undefined;
   onUpstreamChunk?: (request: Request) => void;

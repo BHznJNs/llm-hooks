@@ -13,7 +13,7 @@ async function loadConfigForLocal(): Promise<AppConfig> {
   const { default: appData } = await import('./utils/app-data.ts');
   const pathModule = await import('node:path');
   const fsModule = await import('node:fs/promises');
-  const configPath = pathModule.join(await appData, 'config.json');
+  const configPath = pathModule.join(appData, 'config.json');
   try {
     await fsModule.access(configPath, fsModule.constants.R_OK);
   } catch {
@@ -24,7 +24,7 @@ async function loadConfigForLocal(): Promise<AppConfig> {
   return fsModule.readFile(configPath, 'utf8').then(JSON.parse);
 }
 
-export async function loadConfig(): Promise<AppConfig> {
+export default async function loadConfig(): Promise<AppConfig> {
   switch (runtime) {
     case 'cf-worker':
       return await loadConfigForCfWorker();

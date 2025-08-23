@@ -5,7 +5,7 @@ category: "后端服务"
 author: "BHznJNs"
 authorUrl: "https://github.com/BHznJNs"
 tags: ["TypeScript", "Hono", "LLM", "OpenAI", "Google", "Anthropic", "AI Gateway"]
-lastUpdated: "2025-08-20"
+lastUpdated: "2025-08-23"
 ---
 
 # llm-hooks
@@ -23,22 +23,50 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **LLM SDK**: [@ai-sdk/*](https://sdk.vercel.ai/docs) - 用于与各种 LLM 提供商交互的 SDK
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
+- **部署工具**: [Wrangler](https://developers.cloudflare.com/workers/wrangler/) - Cloudflare Workers 部署工具
+- **环境管理**: [env-paths](https://github.com/sindresorhus/env-paths) - 跨平台应用数据路径管理
+- **TypeScript 编译**: TypeScript 编译器 API - 用于动态插件编译
 
 ## 项目结构
 
 ```
 llm-hooks/
+├── common/
+│   └── types/
+│       ├── config.ts          # 配置类型定义
+│       ├── index.ts           # 类型导出入口
+│       ├── openai.ts          # OpenAI 类型定义
+│       ├── plugin.d.ts        # 插件类型定义
+│       └── provider.ts        # LLM 提供商类型定义
+├── plugins/
+│   ├── plugin-template.ts     # 插件模板
+│   └── README.md              # 插件文档
+├── resources/
+│   └── tsconfig.plugin-build.json  # 插件构建配置
 ├── src/
-│   ├── app.ts              # Hono 应用定义和路由处理
-│   ├── index.ts           # 应用入口文件，支持多种部署环境
+│   ├── app.ts                 # Hono 应用定义和路由处理
+│   ├── cache.ts               # 插件缓存机制
+│   ├── hooks.ts               # Hook 处理器
+│   ├── index.ts               # 应用入口文件，支持多种部署环境
 │   ├── llm-client-factory.ts  # LLM 客户端工厂函数
-│   └── types/            # 类型定义
-│       ├── index.ts
-│       └── openai.ts
-├── package.json          # 项目依赖和脚本定义
-├── tsconfig.json         # TypeScript 配置
-├── biome.jsonc           # 代码质量工具配置
-└── README.md             # 项目文档
+│   ├── load-config.ts         # 配置加载函数
+│   ├── load-plugin.ts         # 插件加载函数
+│   └── utils/
+│       ├── ai-sdk-utils.ts    # AI SDK 工具函数
+│       ├── app-data.ts        # 应用数据工具
+│       ├── compile.ts         # TypeScript 编译工具
+│       ├── field-utils.ts     # 字段处理工具
+│       ├── logger.ts          # 日志记录工具
+│       ├── response-code.ts   # HTTP 响应代码工具
+│       ├── runtime.ts         # 运行时环境工具
+│       └── type-utils.ts      # 类型工具函数
+├── .gitignore                 # Git 忽略文件
+├── AGENTS.md                  # 项目代理文档
+├── biome.jsonc                # 代码质量工具配置
+├── package.json               # 项目依赖和脚本定义
+├── package-lock.json          # 依赖锁文件
+├── tsconfig.json              # TypeScript 配置
+└── wrangler.jsonc             # Cloudflare Workers 配置
 ```
 
 ## 开发指南
@@ -67,6 +95,7 @@ llm-hooks/
 
 - Node.js >= 18.x
 - npm 或 yarn 包管理器
+- TypeScript >= 5.9.2
 
 ### 安装步骤
 
@@ -115,40 +144,192 @@ export function llmClientFactory(
 
 ### API 路由处理
 
-项目使用 Hono 框架定义了基本的 API 路由，包括根路径、模型列表和聊天完成接口。
+项目使用 Hono 框架定义了完整的 API 路由，包括根路径、模型列表和聊天完成接口。
 
+#### 根路径路由
 ```typescript
 app.get('/', (c) => {
   return c.html('Hello World!');
 });
+```
 
+#### 模型列表路由
+项目现在实际代理上游 API 的模型列表请求，支持完整的请求头处理和响应转发，并支持插件 Hook 处理。
+
+```typescript
 app.get('/v1/models', async (c) => {
-  return c.json({ models: [] });
-});
-
-app.post('/v1/chat/completions', async (c) => {
-  const body = await c.req.json<ChatCompletionRequest>();
-  return c.json(body);
+  const upstream = new URL('/v1/models', config.upstream.baseUrl);
+  const proxyHeaders = new Headers(c.req.raw.headers);
+  for (const key of [
+    'Host',
+    'Connection',
+    'Accept-Encoding',
+    'Content-Length',
+    'Content-Type',
+  ]) {
+    proxyHeaders.delete(key);
+  }
+  const upstreamResp = await fetch(upstream, {
+    method: 'GET',
+    headers: proxyHeaders,
+  });
+  let modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
+  modelList = await HooksHandler.onFetchModelList(config, modelList);
+  return c.json(modelList);
 });
 ```
 
+#### 聊天完成接口
+项目实现了完整的聊天完成接口，支持流式和非流式响应，包括认证和错误处理。
+
+```typescript
+app.post('/v1/chat/completions', async (c) => {
+  const authToken = extractAuthToken(c);
+  if (!authToken) {
+    return c.json({ error: 'Unauthorized' }, UNAUTHORIZED);
+  }
+
+  const client = llmClientFactory(
+    config.upstream.provider,
+    authToken,
+    config.upstream.baseUrl
+  );
+  const body = await c.req.json<OpenAI.ChatCompletionRequest>();
+  const [isStream, requestParams] =
+    AI_SDK_UTILS.chatCompletionRequestParamsFactory(client, body);
+
+  if (isStream) {
+    const result = streamText(requestParams);
+    const chatCompletionStream =
+      AI_SDK_UTILS.chatCompletionStreamResponseFactory(result);
+    return stream(c, async (s) => {
+      const reader = chatCompletionStream.getReader();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        await s.write(AI_SDK_UTILS.encodeChunk(value));
+      }
+    });
+  }
+  const result = await generateText(requestParams);
+  const chatCompletionResponse =
+    AI_SDK_UTILS.chatCompletionNonStreamResponseFactory(body, result);
+  return c.json(chatCompletionResponse);
+});
+```
+
+### Hook 机制实现
+
+项目实现了完整的 Hook 处理机制，支持在请求和响应的不同阶段对数据进行处理。
+
+#### Hook 处理器 (`src/hooks.ts`)
+```typescript
+export default class HooksHandler {
+  static async onFetchModelList(
+    config: AppConfig,
+    modelListResponse: OpenAI.ModelListResponse
+  ): Promise<OpenAI.ModelListResponse> {
+    let finalResponse = modelListResponse;
+    for (const pluginConfig of config.plugins) {
+      if (!pluginConfig.enabled) {
+        continue;
+      }
+      const plugin = await loadPlugin(pluginConfig.name);
+      if (plugin?.onFetchModelList) {
+        finalResponse = plugin.onFetchModelList(finalResponse);
+      }
+    }
+    return finalResponse;
+  }
+}
+```
+
+### 插件系统
+
+项目支持动态插件加载，插件可以声明依赖，在运行时会自动安装对应依赖。
+
+#### 插件配置类型
+```typescript
+export type PluginConfig = {
+  name: string;
+  enabled: boolean;
+  dependencies: string[];
+  arguments: Record<string, unknown>;
+};
+```
+
+#### 插件加载机制 (`src/load-plugin.ts`)
+支持多种运行时环境和插件类型：
+- Cloudflare Workers 环境
+- Docker 环境
+- 本地开发环境
+- NPM 包插件
+- 本地 TypeScript/JavaScript 插件
+
+### 缓存机制
+
+项目实现了插件缓存机制以提高性能：
+
+```typescript
+export const cache = (() => {
+  const cache_ = new Map();
+  switch (runtime) {
+    case 'docker':
+    case 'local':
+      return cache_;
+    default:
+      throw new Error(`Unsupported runtime: ${runtime}`);
+  }
+})();
+```
+
+### 工具函数
+
+项目包含多个实用工具函数：
+
+#### AI SDK 工具 (`src/utils/ai-sdk-utils.ts`)
+提供 AI SDK 相关的工具函数，包括请求参数工厂、响应工厂和流式数据编码。
+
+#### 字段处理工具 (`src/utils/field-utils.ts`)
+包含认证令牌提取等字段处理函数。
+
+#### 响应代码工具 (`src/utils/response-code.ts`)
+定义 HTTP 响应代码常量。
+
+#### 配置加载 (`src/load-config.ts`)
+加载和验证应用配置，支持多种运行时环境。
+
+#### TypeScript 编译工具 (`src/utils/compile.ts`)
+提供动态 TypeScript 编译功能，用于插件系统：
+
+```typescript
+export default async function compile(
+  tsFilePath: string
+): Promise<string | null> {
+  const sourceCode = await fs.readFile(tsFilePath, 'utf8');
+  const compilerOptions: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+  };
+  const result = ts.transpileModule(sourceCode, { compilerOptions });
+  const jsCode = result.outputText;
+  const jsFileName = `${path.basename(tsFilePath, '.ts')}.js`;
+  const tsDirPath = path.dirname(tsFilePath);
+  const compiledFilePath = path.join(tsDirPath, jsFileName);
+  await fs.writeFile(compiledFilePath, jsCode);
+  return compiledFilePath;
+}
+```
+
+#### 应用数据管理 (`src/utils/app-data.ts`)
+提供跨平台的应用数据路径管理。
+
 ## 测试策略
 
-### 单元测试
-
-- 使用 [Vitest](https://vitest.dev/) 作为测试框架
-- 测试覆盖率要求达到 80% 以上
-- 测试文件与源文件同目录，以 `.test.ts` 命名
-
-### 集成测试
-
-- 测试不同 LLM 提供商的集成
-- 验证 API 路由的响应格式
-
-### 端到端测试
-
-- 使用 [Playwright](https://playwright.dev/) 进行端到端测试
-- 测试完整的 API 请求和响应流程
+项目目前没有添加测试相关的开发依赖和测试脚本。
 
 ## 部署指南
 
@@ -169,10 +350,8 @@ npm run build
 ### 环境变量
 
 ```env
-# 必要的环境变量
-API_KEY=your_api_key_here
-BASE_URL=optional_base_url_for_provider
-PROVIDER=llm_provider_type (openai, google, anthropic)
+PORT=5126 # Server port
+RUNTIME=docker # Docker environment sentinel
 ```
 
 ## 性能优化
@@ -180,22 +359,25 @@ PROVIDER=llm_provider_type (openai, google, anthropic)
 ### 后端优化
 
 - 使用 Hono 框架以获得高性能和低开销
-- 实现缓存策略以减少重复请求
-- 优化数据库查询（如果使用数据库）
+- 实现插件缓存策略以减少重复加载
+- 优化流式响应处理
+- 使用内存缓存提高插件加载性能
+
+### 插件系统优化
+
+- 支持插件预编译和缓存
+- 按需加载插件依赖
+- 运行时环境适配优化
 
 ## 安全考虑
 
-### 数据安全
+### 前端鉴权
 
-- 对输入数据进行验证
-- 使用 HTTPS 进行安全通信
-- 保护 API 密钥等敏感信息
+（这一条未实现）需要在通过鉴权之后才能对项目的配置进行修改。
 
-### 认证与授权
+### 插件安全
 
-- 实现 API 密钥认证机制
-- 添加请求频率限制
-- 实现用户权限控制
+插件无法直接读取用户的 API Key，防止第三方插件窃取用户数据。
 
 ## 监控和日志
 
@@ -204,12 +386,14 @@ PROVIDER=llm_provider_type (openai, google, anthropic)
 - 使用 pino 进行日志记录
 - 集成错误追踪工具（如 Sentry）
 - 监控 API 请求和响应时间
+- 插件执行性能监控
 
 ### 日志管理
 
 - 日志级别包括：trace, debug, info, warn, error, fatal
 - 日志格式为 JSON，便于解析和分析
 - 日志存储策略：根据部署环境选择合适的存储方案
+- 插件执行日志记录
 
 ## 常见问题
 
@@ -219,6 +403,7 @@ PROVIDER=llm_provider_type (openai, google, anthropic)
 1. 在 `llmClientFactory` 函数中添加新的提供商类型
 2. 安装相应的 @ai-sdk 包
 3. 更新类型定义文件
+4. 添加相应的配置支持
 
 ### 问题 2: 如何在 Cloudflare Workers 中部署？
 
@@ -226,57 +411,26 @@ PROVIDER=llm_provider_type (openai, google, anthropic)
 1. 确保代码符合 Cloudflare Workers 的要求
 2. 使用 Wrangler 进行部署
 3. 配置环境变量
+4. 注意插件系统的限制（Cloudflare Workers 不支持动态模块加载）
+
+### 问题 3: 如何开发自定义插件？
+
+**解决方案**:
+1. 参考 `plugins/plugin-template.ts` 创建插件模板
+2. 实现所需的 Hook 方法
+3. 在配置文件中启用插件
+4. 测试插件功能
+
+### 问题 4: 插件编译失败如何处理？
+
+**解决方案**:
+1. 检查 TypeScript 语法错误
+2. 验证插件依赖是否正确安装
+3. 查看编译错误日志
+4. 确保运行时环境支持插件编译
 
 ## 参考资源
 
 - [Hono 官方文档](https://hono.dev/)
 - [Vercel AI SDK 文档](https://sdk.vercel.ai/docs)
 - [TypeScript 官方文档](https://www.typescriptlang.org/docs/)
-- [pino 日志库文档](https://getpino.io/#/)
-
-## 功能规划
-
-### Hook 机制
-
-项目计划实现一个灵活的 Hook 机制，允许在请求和响应的不同阶段对数据进行处理。Hook 分为两种类型：
-
-#### Before Request Hook
-
-在发送请求到 LLM 之前执行，可以用于：
-- 提示词优化：通过小模型对用户输入的提示词进行优化
-- 上下文压缩：在上下文过长时，通过小模型进行摘要和压缩
-- 模型 Router：根据任务选择合适的模型
-
-#### After Response Hook
-
-在接收到 LLM 响应后执行，可以用于：
-- XML Patcher：修正工具调用指令格式错误问题
-- JSON Patcher：对响应的 JSON 数据进行修改
-- 自动重试：在响应不符合要求时自动重试
-
-对于 After Response Hook，将支持流式和非流式两种处理方式：
-- 流式输出：Hook 直接操作输出的流，返回新的流
-- 非流式输出：Hook 操作输出的模型消息，并返回新的消息
-
-### 插件系统
-
-项目将通过插件的方式在 Hook 中处理 LLM 的请求和响应。如果没有安装任何插件，则作为一个透明代理。
-
-### 小模型配置
-
-项目需要配置一个小模型，这个小模型可以在 Hook 中被调用，用于特定任务，例如：
-- 根据任务选择合适的模型
-- 根据任务选择合适的预设提示词
-
-### 动态插件管理
-
-项目将支持动态添加插件，插件可以声明依赖，在运行时会自动安装对应依赖。
-（对于 Cloudflare Workers 场景，由于环境限制，可能不支持动态插件及动态安装依赖特性）
-
-## 更新日志
-
-### v1.0.0 (2025-08-20)
-
-- 初始版本发布
-- 实现基本的 LLM API 服务功能
-- 支持 OpenAI、Google 和 Anthropic 提供商

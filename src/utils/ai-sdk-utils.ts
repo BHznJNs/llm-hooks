@@ -1,4 +1,6 @@
-/** biome-ignore-all lint/complexity/noBannedTypes: <explanation> */
+/**
+ * biome-ignore-all lint/complexity/noBannedTypes: For conveniently pass TOOLS type parameter into the AI SDK methods
+ */
 import type {
   CallSettings,
   FinishReason,
@@ -14,7 +16,7 @@ import type {
   ToolSet,
 } from 'ai';
 import type { llmClientFactory } from '../llm-client-factory.ts';
-import { nullToUndefined, undefinedToNull } from './type-utils.ts';
+import { nullToUndefined } from './type-utils.ts';
 
 const finishReasonMap = new Map<
   FinishReason,
@@ -45,8 +47,20 @@ export declare namespace AI_SDK_UTILS {
     };
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: simulate a namespace with utils functions
 export class AI_SDK_UTILS {
+  static encodeChunk(
+    chunkData:
+      | string
+      | OpenAI.ChatCompletionResponseChunk
+      | OpenAI.ChatCompletionResponseErrorChunk
+  ): Uint8Array {
+    if (typeof chunkData === 'string') {
+      return new TextEncoder().encode(`data: ${chunkData}\n\n`);
+    }
+    return new TextEncoder().encode(`data: ${JSON.stringify(chunkData)}\n\n`);
+  }
+
   static chatCompletionRequestParamsFactory(
     client: ReturnType<typeof llmClientFactory>,
     openAiRequestParams: OpenAI.ChatCompletionRequest
@@ -79,13 +93,12 @@ export class AI_SDK_UTILS {
 
         providerOptions: {
           openai: {
-            user: undefinedToNull(openAiRequestParams.safety_identifier),
-            logitBias: undefinedToNull(openAiRequestParams.logit_bias),
-            logprobs: undefinedToNull(openAiRequestParams.logprobs),
-            parallelToolCalls: undefinedToNull(
-              openAiRequestParams.parallel_tool_calls
-            ),
-            verbosity: undefinedToNull(openAiRequestParams.verbosity),
+            user: openAiRequestParams.safety_identifier as JSONValue,
+            logitBias: openAiRequestParams.logit_bias as JSONValue,
+            logprobs: openAiRequestParams.logprobs as JSONValue,
+            parallelToolCalls:
+              openAiRequestParams.parallel_tool_calls as JSONValue,
+            textVerbosity: openAiRequestParams.verbosity as JSONValue,
           },
         },
       },

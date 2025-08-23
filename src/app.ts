@@ -2,8 +2,9 @@ import { generateText, streamText } from 'ai';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { stream } from 'hono/streaming';
+import HooksHandler from './hooks.ts';
 import { llmClientFactory } from './llm-client-factory.ts';
-import { loadConfig } from './load-config.ts';
+import loadConfig from './load-config.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
 import { extractAuthToken } from './utils/field-utils.ts';
 import { UNAUTHORIZED } from './utils/response-code.ts';
@@ -32,7 +33,8 @@ app.get('/v1/models', async (c) => {
     method: 'GET',
     headers: proxyHeaders,
   });
-  const modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
+  let modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
+  modelList = await HooksHandler.onFetchModelList(config, modelList);
   return c.json(modelList);
 });
 
@@ -56,7 +58,14 @@ app.post('/v1/chat/completions', async (c) => {
     const chatCompletionStream =
       AI_SDK_UTILS.chatCompletionStreamResponseFactory(result);
     return stream(c, async (s) => {
-      return await s.pipe(chatCompletionStream);
+      const reader = chatCompletionStream.getReader();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        await s.write(AI_SDK_UTILS.encodeChunk(value));
+      }
     });
   }
   const result = await generateText(requestParams);

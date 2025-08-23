@@ -15,15 +15,12 @@ export type AppConfig = {
     model: string;
   };
 
-  hooks: HooksConfig;
+  plugins: PluginConfig[];
 };
 
-// Use hooks config to store the order of hooks
-export type HooksConfig = {
-  beforeUpstreamRequest: string[];
-  onUpstreamChunk: string[];
-  beforeDownstreamResponse: string[];
-
-  onFetchModelList: string[];
-  onError: string[];
+export type PluginConfig = {
+  name: string;
+  enabled: boolean;
+  dependencies: string[];
+  arguments: Record<string, unknown>;
 };
