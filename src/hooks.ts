@@ -15,7 +15,9 @@ export default class HooksHandler {
       }
       const plugin = await loadPlugin(pluginConfig.name);
       if (plugin?.onFetchModelList) {
-        const pluginLogger = logger.moduleLogger(`plugin:${pluginConfig.name}`);
+        const pluginLogger = logger.moduleLogger(
+          `hook: onFetchModelList | plugin:${pluginConfig.name}`
+        );
         finalResponse = plugin.onFetchModelList(finalResponse, pluginLogger);
       }
     }

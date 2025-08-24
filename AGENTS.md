@@ -12,7 +12,7 @@ lastUpdated: "2025-08-23"
 
 ## 项目概述
 
-llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供一个灵活、可定制的接口来与多种大型语言模型提供商进行交互。该项目支持 OpenAI、Google 和 Anthropic 等主流 LLM 提供商，并可以轻松部署到多种环境中，包括 Docker、Cloudflare Workers 和本地直接运行。
+llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供一个灵活、可定制的接口来与多种大型语言模型提供商进行交互。该项目支持 OpenAI、Google 和 Anthropic 等主流 LLM 提供商，并可以轻松部署到多种环境中，包括 Docker 和本地直接运行。
 
 项目通过插件的方式实现 Hook 机制，在请求和响应的不同阶段对数据进行处理。如果没有安装任何插件，则作为一个透明代理。项目还支持配置一个小模型，可以在 Hook 中被调用，用于特定任务。
 
@@ -23,8 +23,7 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **LLM SDK**: [@ai-sdk/*](https://sdk.vercel.ai/docs) - 用于与各种 LLM 提供商交互的 SDK
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
-- **部署工具**: [Wrangler](https://developers.cloudflare.com/workers/wrangler/) - Cloudflare Workers 部署工具
-- **环境管理**: [env-paths](https://github.com/sindresorhus/env-paths) - 跨平台应用数据路径管理
+- **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
 - **TypeScript 编译**: TypeScript 编译器 API - 用于动态插件编译
 
 ## 项目结构
@@ -36,13 +35,8 @@ llm-hooks/
 │       ├── config.ts          # 配置类型定义
 │       ├── index.ts           # 类型导出入口
 │       ├── openai.ts          # OpenAI 类型定义
-│       ├── plugin.d.ts        # 插件类型定义
+│       ├── plugin.ts          # 插件类型定义
 │       └── provider.ts        # LLM 提供商类型定义
-├── plugins/
-│   ├── plugin-template.ts     # 插件模板
-│   └── README.md              # 插件文档
-├── resources/
-│   └── tsconfig.plugin-build.json  # 插件构建配置
 ├── src/
 │   ├── app.ts                 # Hono 应用定义和路由处理
 │   ├── cache.ts               # 插件缓存机制
@@ -51,6 +45,10 @@ llm-hooks/
 │   ├── llm-client-factory.ts  # LLM 客户端工厂函数
 │   ├── load-config.ts         # 配置加载函数
 │   ├── load-plugin.ts         # 插件加载函数
+│   ├── db/
+│   │   ├── config.ts          # 数据库配置
+│   │   ├── index.ts           # 数据库连接和导出
+│   │   └── schema.ts          # 数据库模式定义
 │   └── utils/
 │       ├── ai-sdk-utils.ts    # AI SDK 工具函数
 │       ├── app-data.ts        # 应用数据工具
@@ -60,13 +58,15 @@ llm-hooks/
 │       ├── response-code.ts   # HTTP 响应代码工具
 │       ├── runtime.ts         # 运行时环境工具
 │       └── type-utils.ts      # 类型工具函数
+├── drizzle/                   # 数据库迁移文件
 ├── .gitignore                 # Git 忽略文件
+├── Dockerfile                 # Docker 容器配置
 ├── AGENTS.md                  # 项目代理文档
 ├── biome.jsonc                # 代码质量工具配置
+├── drizzle.config.ts          # 数据库迁移配置
 ├── package.json               # 项目依赖和脚本定义
 ├── package-lock.json          # 依赖锁文件
 ├── tsconfig.json              # TypeScript 配置
-└── wrangler.jsonc             # Cloudflare Workers 配置
 ```
 
 ## 开发指南
@@ -94,14 +94,13 @@ llm-hooks/
 ### 开发要求
 
 - Node.js >= 18.x
-- npm 或 yarn 包管理器
 - TypeScript >= 5.9.2
 
 ### 安装步骤
 
 ```bash
 # 1. 克隆项目
-git clone [repository-url]
+git clone https://github.com/BHznJNs/llm-hooks
 
 # 2. 安装依赖
 npm install
@@ -111,6 +110,16 @@ npm run dev
 ```
 
 ## 核心功能实现
+
+### 数据持久化
+
+#### 本地运行
+
+直接将应用配置、插件脚本和通过 npm 安装的插件放在用户的数据目录下，在运行时直接通过绝对路径加载配置及插件。
+
+#### Docker 部署
+
+将应用配置、插件脚本持久化到数据库中，在运行时从数据库中读出配置和脚本内容。
 
 ### LLM 客户端工厂
 
@@ -179,8 +188,8 @@ app.get('/v1/models', async (c) => {
 });
 ```
 
-#### 聊天完成接口
-项目实现了完整的聊天完成接口，支持流式和非流式响应，包括认证和错误处理。
+#### /chat/completions 接口
+项目实现了完整的 `/chat/completions` 接口，支持流式和非流式响应，包括认证和错误处理。
 
 ```typescript
 app.post('/v1/chat/completions', async (c) => {
@@ -261,10 +270,12 @@ export type PluginConfig = {
 ```
 
 #### 插件加载机制 (`src/load-plugin.ts`)
-支持多种运行时环境和插件类型：
-- Cloudflare Workers 环境
+
+支持的运行时环境：
 - Docker 环境
 - 本地开发环境
+
+支持的插件类型：
 - NPM 包插件
 - 本地 TypeScript/JavaScript 插件
 
@@ -342,7 +353,7 @@ npm run build
 
 ### 部署步骤
 
-1. 准备生产环境 (Node.js 或 Cloudflare Workers)
+1. 准备生产环境 (Node.js)
 2. 配置环境变量
 3. 执行部署脚本
 4. 验证部署结果
@@ -350,8 +361,9 @@ npm run build
 ### 环境变量
 
 ```env
-PORT=5126 # Server port
-RUNTIME=docker # Docker environment sentinel
+PORT=5126 # 服务器端口（可选）
+RUNTIME=docker # 运行环境标识（可选，支持 docker/local/cf-worker）
+DATABASE_URL=postgres://username:password@hostname:port/database # 数据库连接 URL，仅在 Docker 环境下需要配置
 ```
 
 ## 性能优化
@@ -405,13 +417,6 @@ RUNTIME=docker # Docker environment sentinel
 3. 更新类型定义文件
 4. 添加相应的配置支持
 
-### 问题 2: 如何在 Cloudflare Workers 中部署？
-
-**解决方案**: 
-1. 确保代码符合 Cloudflare Workers 的要求
-2. 使用 Wrangler 进行部署
-3. 配置环境变量
-4. 注意插件系统的限制（Cloudflare Workers 不支持动态模块加载）
 
 ### 问题 3: 如何开发自定义插件？
 
