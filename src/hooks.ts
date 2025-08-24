@@ -1,5 +1,6 @@
 import type { AppConfig } from '../common/types/config.ts';
 import loadPlugin from './load-plugin.ts';
+import { logger } from './utils/logger.ts';
 
 // biome-ignore lint/complexity/noStaticOnlyClass: simulate a namespace with hooks handlers
 export default class HooksHandler {
@@ -14,7 +15,8 @@ export default class HooksHandler {
       }
       const plugin = await loadPlugin(pluginConfig.name);
       if (plugin?.onFetchModelList) {
-        finalResponse = plugin.onFetchModelList(finalResponse);
+        const pluginLogger = logger.moduleLogger(`plugin:${pluginConfig.name}`);
+        finalResponse = plugin.onFetchModelList(finalResponse, pluginLogger);
       }
     }
     return finalResponse;

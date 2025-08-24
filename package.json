@@ -7,9 +7,7 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "predeploy:cloudflare": "tsc -p ./resources/tsconfig.plugin-build.json",
-    "deploy:cloudflare": "wrangler deploy"
+    "dev": "tsx watch src/index.ts --env-file .env"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.5",
@@ -17,18 +15,21 @@
     "@ai-sdk/openai": "^2.0.16",
     "@hono/node-server": "^1.19.0",
     "ai": "^5.0.18",
+    "drizzle-orm": "^0.44.4",
     "env-paths": "^3.0.0",
     "hono": "^4.9.2",
     "openai": "^5.15.0",
+    "pg": "^8.16.3",
     "pino": "^9.9.0",
-    "std-env": "^3.9.0",
+    "postgres": "^3.4.7",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.4",
     "tsx": "^4.20.4",
-    "ultracite": "^5.2.3",
-    "wrangler": "^4.31.0"
+    "ultracite": "^5.2.3"
   }
 }
