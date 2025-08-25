@@ -25,3 +25,4 @@ dist-ssr
 
 *.js
 .env
+.env.docker

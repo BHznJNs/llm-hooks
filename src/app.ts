@@ -2,9 +2,9 @@ import { generateText, streamText } from 'ai';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { stream } from 'hono/streaming';
+import loadConfig from './config.ts';
 import HooksHandler from './hooks.ts';
 import { llmClientFactory } from './llm-client-factory.ts';
-import loadConfig from './load-config.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
 import { extractAuthToken } from './utils/field-utils.ts';
 import { UNAUTHORIZED } from './utils/response-code.ts';
@@ -18,7 +18,10 @@ app.get('/', (c) => {
 });
 
 app.get('/v1/models', async (c) => {
-  const upstream = new URL('/v1/models', config.upstream.baseUrl);
+  const upstreamEndpoint = config.upstream.baseUrl.endsWith('/')
+    ? config.upstream.baseUrl
+    : `${config.upstream.baseUrl}/`;
+  const upstream = new URL('v1/models', upstreamEndpoint);
   const proxyHeaders = new Headers(c.req.raw.headers);
   for (const key of [
     'Host',

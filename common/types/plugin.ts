@@ -1,13 +1,37 @@
 import type { Logger } from 'pino';
+import type { LlmModel } from '../../src/llm-client-factory.ts';
+
+export type PluginArguments<T> = {
+  data: T;
+  logger: Logger;
+  model: LlmModel;
+  config: Record<string, unknown>;
+};
 
 export type Plugin = {
-  params?: Record<string, unknown>;
+  fields?: string[];
 
-  beforeUpstreamRequest?: (request: Request) => Request | undefined;
-  onUpstreamChunk?: (request: Request) => void;
-  afterUpstreamResponse?: (response: Response) => Response | undefined;
+  beforeUpstreamRequest?: (
+    args: PluginArguments<OpenAI.ChatCompletionRequest>
+  ) => {
+    requestBody: OpenAI.ChatCompletionRequest;
+    providerOptions: Record<string, unknown>;
+  };
+  onUpstreamChunk?: (
+    args: PluginArguments<OpenAI.ChatCompletionResponseChunk>
+  ) => OpenAI.ChatCompletionResponseChunk | null;
+  afterUpstreamResponse?: (
+    args: PluginArguments<
+      OpenAI.ChatCompletionResponse | { collectedResponse: string }
+    >,
+    isStream: boolean
+  ) =>
+    | OpenAI.ChatCompletionResponse
+    | ReadableStream<
+        | OpenAI.ChatCompletionResponseChunk
+        | OpenAI.ChatCompletionResponseErrorChunk
+      >;
   onFetchModelList?: (
-    modelList: OpenAI.ModelListResponse,
-    logger: Logger
+    args: PluginArguments<OpenAI.ModelListResponse>
   ) => OpenAI.ModelListResponse;
 };

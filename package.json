@@ -7,7 +7,8 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file .env src/index.ts "
+    "dev": "tsx watch --env-file .env src/index.ts",
+    "dev:docker": "tsx watch --env-file .env.docker src/index.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.5",
@@ -18,6 +19,7 @@
     "drizzle-orm": "^0.44.4",
     "env-paths": "^3.0.0",
     "hono": "^4.9.2",
+    "live-plugin-manager": "^1.1.0",
     "openai": "^5.15.0",
     "pg": "^8.16.3",
     "pino": "^9.9.0",

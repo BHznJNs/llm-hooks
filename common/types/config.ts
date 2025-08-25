@@ -1,7 +1,8 @@
-import type { LlmProvider } from './provider.ts';
+export type LlmProvider = 'openai' | 'google' | 'anthropic';
+export type AppTheme = 'dark' | 'light' | 'system';
 
 export type AppConfig = {
-  theme: string;
+  theme: AppTheme;
   language: string;
 
   upstream: {
@@ -10,17 +11,22 @@ export type AppConfig = {
   };
 
   assistant: {
-    baseUrl?: string;
-    provider?: LlmProvider;
+    baseUrl: string;
+    provider: LlmProvider;
     model: string;
+    apiKey: string;
   };
 
-  plugins: PluginConfig[];
+  plugins: {
+    beforeUpstreamRequest: Record<string, PluginConfig>;
+    onUpstreamChunk: Record<string, PluginConfig>;
+    afterUpstreamResponse: Record<string, PluginConfig>;
+    onFetchModelList: Record<string, PluginConfig>;
+  };
 };
 
 export type PluginConfig = {
-  name: string;
   enabled: boolean;
   dependencies: string[];
-  arguments: Record<string, unknown>;
+  params: Record<string, unknown>;
 };

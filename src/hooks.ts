@@ -1,6 +1,21 @@
+import type { Logger } from 'pino';
 import type { AppConfig } from '../common/types/config.ts';
-import loadPlugin from './load-plugin.ts';
+import { type LlmModel, llmClientFactory } from './llm-client-factory.ts';
+import { loadPlugin } from './plugin.ts';
 import { logger } from './utils/logger.ts';
+
+function assistantModelFactory(config: AppConfig): LlmModel {
+  const client = llmClientFactory(
+    config.assistant.provider,
+    config.assistant.apiKey,
+    config.assistant.baseUrl
+  );
+  return client.chat(config.assistant.model);
+}
+
+function pluginLoggerFactory(hookName: string, pluginName: string): Logger {
+  return logger.moduleLogger(`hook: ${hookName} | plugin:${pluginName}`);
+}
 
 // biome-ignore lint/complexity/noStaticOnlyClass: simulate a namespace with hooks handlers
 export default class HooksHandler {
@@ -8,17 +23,27 @@ export default class HooksHandler {
     config: AppConfig,
     modelListResponse: OpenAI.ModelListResponse
   ): Promise<OpenAI.ModelListResponse> {
+    const assistantModel = assistantModelFactory(config);
+
     let finalResponse = modelListResponse;
-    for (const pluginConfig of config.plugins) {
+    for (const [pluginName, pluginConfig] of Object.entries(
+      config.plugins.onFetchModelList
+    )) {
       if (!pluginConfig.enabled) {
         continue;
       }
-      const plugin = await loadPlugin(pluginConfig.name);
+      const plugin = await loadPlugin(pluginName);
       if (plugin?.onFetchModelList) {
-        const pluginLogger = logger.moduleLogger(
-          `hook: onFetchModelList | plugin:${pluginConfig.name}`
+        const pluginLogger = pluginLoggerFactory(
+          'onFetchModelList',
+          pluginName
         );
-        finalResponse = plugin.onFetchModelList(finalResponse, pluginLogger);
+        finalResponse = plugin.onFetchModelList({
+          data: finalResponse,
+          logger: pluginLogger,
+          model: assistantModel,
+          config: pluginConfig.params,
+        });
       }
     }
     return finalResponse;

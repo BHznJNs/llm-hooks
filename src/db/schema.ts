@@ -1,67 +1,56 @@
-import { relations } from 'drizzle-orm';
 import {
   boolean,
-  integer,
   jsonb,
   pgEnum,
   pgTable,
   serial,
   text,
-  timestamp,
 } from 'drizzle-orm/pg-core';
+import type { PluginConfig } from '../../common/types/config.ts';
+import type { LlmProvider } from '../llm-client-factory.ts';
 
-// LLM Provider Enumeration
-export const llmProviderEnum = pgEnum('llm_provider', [
-  'openai',
-  'google',
-  'anthropic',
-]);
+const themeEnum = pgEnum('theme_enum', ['dark', 'light', 'system']);
 
 export const appConfigs = pgTable('app_configs', {
   id: serial('id').primaryKey(),
-  theme: text('theme').notNull(),
+  theme: themeEnum('theme').notNull(),
   language: text('language').notNull(),
 
-  // upstream config
-  upstreamBaseUrl: text('upstream_base_url').notNull(),
-  upstreamProvider: text('upstream_provider').notNull(),
+  upstream: jsonb('upstream')
+    .$type<{
+      baseUrl: string;
+      provider: LlmProvider;
+    }>()
+    .notNull(),
 
-  // assistant config
-  assistantBaseUrl: text('assistant_base_url'),
-  assistantProvider: text('assistant_provider'),
-  assistantModel: text('assistant_model').notNull(),
+  assistant: jsonb('assistant')
+    .$type<{
+      baseUrl: string;
+      provider: LlmProvider;
+      model: string;
+      apiKey: string;
+    }>()
+    .notNull(),
 
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+  plugins: jsonb('plugins')
+    .$type<{
+      beforeUpstreamRequest: Record<string, PluginConfig>;
+      onUpstreamChunk: Record<string, PluginConfig>;
+      afterUpstreamResponse: Record<string, PluginConfig>;
+      onFetchModelList: Record<string, PluginConfig>;
+    }>()
+    .notNull(),
 });
 
 export const pluginConfigs = pgTable('plugin_configs', {
   id: serial('id').primaryKey(),
-  appConfigId: integer('app_config_id')
-    .notNull()
-    .references(() => appConfigs.id),
   name: text('name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
   dependencies: text('dependencies').array().notNull().default([]),
-  arguments: jsonb('arguments').notNull().default({}),
-
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+  params: jsonb('params').notNull().default({}),
 });
 
-export const appConfigRelations = relations(appConfigs, ({ many }) => ({
-  plugins: many(pluginConfigs),
-}));
-
-export const pluginConfigRelations = relations(pluginConfigs, ({ one }) => ({
-  appConfig: one(appConfigs, {
-    fields: [pluginConfigs.appConfigId],
-    references: [appConfigs.id],
-  }),
-}));
+export const pluginScripts = pgTable('plugin_scripts', {
+  id: text('id').primaryKey(),
+  content: text('content').notNull(),
+});

@@ -24,7 +24,6 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
 - **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
-- **TypeScript 编译**: TypeScript 编译器 API - 用于动态插件编译
 
 ## 项目结构
 
@@ -43,10 +42,9 @@ llm-hooks/
 │   ├── hooks.ts               # Hook 处理器
 │   ├── index.ts               # 应用入口文件，支持多种部署环境
 │   ├── llm-client-factory.ts  # LLM 客户端工厂函数
-│   ├── load-config.ts         # 配置加载函数
-│   ├── load-plugin.ts         # 插件加载函数
+│   ├── config.ts         # 配置加载函数
+│   ├── plugin.ts         # 插件加载函数
 │   ├── db/
-│   │   ├── config.ts          # 数据库配置
 │   │   ├── index.ts           # 数据库连接和导出
 │   │   └── schema.ts          # 数据库模式定义
 │   └── utils/
@@ -125,147 +123,41 @@ npm run dev
 
 项目通过 `llmClientFactory` 函数支持多种 LLM 提供商，包括 OpenAI、Google 和 Anthropic。该函数根据传入的提供商类型和 API 密钥创建相应的客户端实例。
 
-```typescript
-export function llmClientFactory(
-  provider: LlmProvider,
-  apiKey: string,
-  baseURL?: string
-): AnthropicProvider | GoogleGenerativeAIProvider | OpenAIProvider {
-  switch (provider) {
-    case 'google':
-      return createGoogleGenerativeAI({
-        apiKey,
-        baseURL,
-      });
-    case 'anthropic':
-      return createAnthropic({
-        apiKey,
-        baseURL,
-      });
-    case 'openai':
-      return createOpenAI({
-        apiKey,
-        baseURL,
-      });
-  }
-}
-```
-
 ### API 路由处理
 
 项目使用 Hono 框架定义了完整的 API 路由，包括根路径、模型列表和聊天完成接口。
 
 #### 根路径路由
-```typescript
-app.get('/', (c) => {
-  return c.html('Hello World!');
-});
-```
+
+返回项目的前端静态文件（未实现）。
 
 #### 模型列表路由
-项目现在实际代理上游 API 的模型列表请求，支持完整的请求头处理和响应转发，并支持插件 Hook 处理。
 
-```typescript
-app.get('/v1/models', async (c) => {
-  const upstream = new URL('/v1/models', config.upstream.baseUrl);
-  const proxyHeaders = new Headers(c.req.raw.headers);
-  for (const key of [
-    'Host',
-    'Connection',
-    'Accept-Encoding',
-    'Content-Length',
-    'Content-Type',
-  ]) {
-    proxyHeaders.delete(key);
-  }
-  const upstreamResp = await fetch(upstream, {
-    method: 'GET',
-    headers: proxyHeaders,
-  });
-  let modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
-  modelList = await HooksHandler.onFetchModelList(config, modelList);
-  return c.json(modelList);
-});
-```
+项目现在实际代理上游 API 的模型列表请求，支持完整的请求头处理和响应转发，并支持插件 Hook 处理添加特殊模型。
 
 #### /chat/completions 接口
-项目实现了完整的 `/chat/completions` 接口，支持流式和非流式响应，包括认证和错误处理。
 
-```typescript
-app.post('/v1/chat/completions', async (c) => {
-  const authToken = extractAuthToken(c);
-  if (!authToken) {
-    return c.json({ error: 'Unauthorized' }, UNAUTHORIZED);
-  }
-
-  const client = llmClientFactory(
-    config.upstream.provider,
-    authToken,
-    config.upstream.baseUrl
-  );
-  const body = await c.req.json<OpenAI.ChatCompletionRequest>();
-  const [isStream, requestParams] =
-    AI_SDK_UTILS.chatCompletionRequestParamsFactory(client, body);
-
-  if (isStream) {
-    const result = streamText(requestParams);
-    const chatCompletionStream =
-      AI_SDK_UTILS.chatCompletionStreamResponseFactory(result);
-    return stream(c, async (s) => {
-      const reader = chatCompletionStream.getReader();
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          break;
-        }
-        await s.write(AI_SDK_UTILS.encodeChunk(value));
-      }
-    });
-  }
-  const result = await generateText(requestParams);
-  const chatCompletionResponse =
-    AI_SDK_UTILS.chatCompletionNonStreamResponseFactory(body, result);
-  return c.json(chatCompletionResponse);
-});
-```
+项目实现了完整的 `/chat/completions` 接口，支持流式和非流式响应。
 
 ### Hook 机制实现
 
-项目实现了完整的 Hook 处理机制，支持在请求和响应的不同阶段对数据进行处理。
-
-#### Hook 处理器 (`src/hooks.ts`)
-```typescript
-export default class HooksHandler {
-  static async onFetchModelList(
-    config: AppConfig,
-    modelListResponse: OpenAI.ModelListResponse
-  ): Promise<OpenAI.ModelListResponse> {
-    let finalResponse = modelListResponse;
-    for (const pluginConfig of config.plugins) {
-      if (!pluginConfig.enabled) {
-        continue;
-      }
-      const plugin = await loadPlugin(pluginConfig.name);
-      if (plugin?.onFetchModelList) {
-        finalResponse = plugin.onFetchModelList(finalResponse);
-      }
-    }
-    return finalResponse;
-  }
-}
-```
+项目计划支持 Hook 处理机制，支持在请求和响应的不同阶段对数据进行处理。需要支持以下几个 Hook：
+- beforeUpstreamRequest
+- onUpstreamChunk
+- afterUpstreamResponse
+- onFetchModelList
 
 ### 插件系统
 
 项目支持动态插件加载，插件可以声明依赖，在运行时会自动安装对应依赖。
 
 #### 插件配置类型
+
 ```typescript
 export type PluginConfig = {
-  name: string;
   enabled: boolean;
   dependencies: string[];
-  arguments: Record<string, unknown>;
+  params: Record<string, unknown>;
 };
 ```
 
@@ -281,39 +173,31 @@ export type PluginConfig = {
 
 ### 缓存机制
 
-项目实现了插件缓存机制以提高性能：
-
-```typescript
-export const cache = (() => {
-  const cache_ = new Map();
-  switch (runtime) {
-    case 'docker':
-    case 'local':
-      return cache_;
-    default:
-      throw new Error(`Unsupported runtime: ${runtime}`);
-  }
-})();
-```
+项目实现了插件缓存机制以提高性能。
 
 ### 工具函数
 
 项目包含多个实用工具函数：
 
 #### AI SDK 工具 (`src/utils/ai-sdk-utils.ts`)
+
 提供 AI SDK 相关的工具函数，包括请求参数工厂、响应工厂和流式数据编码。
 
 #### 字段处理工具 (`src/utils/field-utils.ts`)
+
 包含认证令牌提取等字段处理函数。
 
 #### 响应代码工具 (`src/utils/response-code.ts`)
+
 定义 HTTP 响应代码常量。
 
 #### 配置加载 (`src/load-config.ts`)
+
 加载和验证应用配置，支持多种运行时环境。
 
 #### TypeScript 编译工具 (`src/utils/compile.ts`)
-提供动态 TypeScript 编译功能，用于插件系统：
+
+提供动态 TypeScript 编译功能，用于插件系统。
 
 ```typescript
 export default async function compile(
@@ -336,6 +220,7 @@ export default async function compile(
 ```
 
 #### 应用数据管理 (`src/utils/app-data.ts`)
+
 提供跨平台的应用数据路径管理。
 
 ## 测试策略
@@ -362,8 +247,9 @@ npm run build
 
 ```env
 PORT=5126 # 服务器端口（可选）
-RUNTIME=docker # 运行环境标识（可选，支持 docker/local/cf-worker）
+RUNTIME=docker # Docker 运行环境标识
 DATABASE_URL=postgres://username:password@hostname:port/database # 数据库连接 URL，仅在 Docker 环境下需要配置
+AUTH_TOKEN=sk-123456 # 用于登录管理页面
 ```
 
 ## 性能优化
@@ -417,16 +303,7 @@ DATABASE_URL=postgres://username:password@hostname:port/database # 数据库连�
 3. 更新类型定义文件
 4. 添加相应的配置支持
 
-
-### 问题 3: 如何开发自定义插件？
-
-**解决方案**:
-1. 参考 `plugins/plugin-template.ts` 创建插件模板
-2. 实现所需的 Hook 方法
-3. 在配置文件中启用插件
-4. 测试插件功能
-
-### 问题 4: 插件编译失败如何处理？
+### 问题 2: 插件编译失败如何处理？
 
 **解决方案**:
 1. 检查 TypeScript 语法错误

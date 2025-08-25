@@ -6,27 +6,40 @@ import {
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
 
 export type LlmProvider = 'openai' | 'google' | 'anthropic';
+export type LlmClient =
+  | AnthropicProvider
+  | GoogleGenerativeAIProvider
+  | OpenAIProvider;
+export type LlmModel = ReturnType<LlmClient['chat']>;
 
 export function llmClientFactory(
   provider: LlmProvider,
   apiKey: string,
-  baseURL?: string
-): AnthropicProvider | GoogleGenerativeAIProvider | OpenAIProvider {
+  baseUrl?: string
+): LlmClient {
+  let upstreamEndpoint: string | undefined;
+  if (baseUrl === undefined) {
+    upstreamEndpoint = undefined;
+  } else if (baseUrl.endsWith('/')) {
+    upstreamEndpoint = baseUrl;
+  } else {
+    upstreamEndpoint = `${baseUrl}/`;
+  }
   switch (provider) {
     case 'google':
       return createGoogleGenerativeAI({
         apiKey,
-        baseURL,
+        baseURL: upstreamEndpoint,
       });
     case 'anthropic':
       return createAnthropic({
         apiKey,
-        baseURL,
+        baseURL: upstreamEndpoint,
       });
     case 'openai':
       return createOpenAI({
         apiKey,
-        baseURL,
+        baseURL: upstreamEndpoint,
       });
   }
 }
