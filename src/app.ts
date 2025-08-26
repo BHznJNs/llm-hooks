@@ -28,7 +28,7 @@ app.get('/v1/models', async (c) => {
   const upstreamEndpoint = config.upstream.baseUrl.endsWith('/')
     ? config.upstream.baseUrl
     : `${config.upstream.baseUrl}/`;
-  const upstream = new URL('v1/models', upstreamEndpoint);
+  const upstream = new URL('models', upstreamEndpoint);
   const proxyHeaders = new Headers(c.req.raw.headers);
   for (const key of [
     'Host',
@@ -39,11 +39,11 @@ app.get('/v1/models', async (c) => {
   ]) {
     proxyHeaders.delete(key);
   }
-  const upstreamResp = await fetch(upstream, {
+  const upstreamResponse = await fetch(upstream, {
     method: 'GET',
     headers: proxyHeaders,
   });
-  let modelList = (await upstreamResp.json()) as OpenAI.ModelListResponse;
+  let modelList = (await upstreamResponse.json()) as OpenAI.ModelListResponse;
   modelList = await HooksHandler.onFetchModelList(config, modelList);
   return c.json(modelList);
 });

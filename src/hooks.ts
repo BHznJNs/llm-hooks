@@ -33,18 +33,16 @@ export default class HooksHandler {
         continue;
       }
       const plugin = await loadPlugin(pluginName);
-      if (plugin?.onFetchModelList) {
-        const pluginLogger = pluginLoggerFactory(
-          'onFetchModelList',
-          pluginName
-        );
-        finalResponse = plugin.onFetchModelList({
-          data: finalResponse,
-          logger: pluginLogger,
-          model: assistantModel,
-          config: pluginConfig.params,
-        });
+      if (plugin === null || !Object.hasOwn(plugin, 'onFetchModelList')) {
+        continue;
       }
+      const pluginLogger = pluginLoggerFactory('onFetchModelList', pluginName);
+      finalResponse = plugin.onFetchModelList!({
+        data: finalResponse,
+        logger: pluginLogger,
+        model: assistantModel,
+        config: pluginConfig.params,
+      });
     }
     return finalResponse;
   }

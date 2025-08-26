@@ -8,19 +8,19 @@ export type PluginArguments<T> = {
   config: Record<string, unknown>;
 };
 
-export type Plugin = {
-  fields?: string[];
+export type Plugin = Partial<{
+  fields: string[];
 
-  beforeUpstreamRequest?: (
+  beforeUpstreamRequest: (
     args: PluginArguments<OpenAI.ChatCompletionRequest>
   ) => {
     requestBody: OpenAI.ChatCompletionRequest;
     providerOptions: Record<string, unknown>;
   };
-  onUpstreamChunk?: (
+  onUpstreamChunk: (
     args: PluginArguments<OpenAI.ChatCompletionResponseChunk>
   ) => OpenAI.ChatCompletionResponseChunk | null;
-  afterUpstreamResponse?: (
+  afterUpstreamResponse: (
     args: PluginArguments<
       OpenAI.ChatCompletionResponse | { collectedResponse: string }
     >,
@@ -31,7 +31,7 @@ export type Plugin = {
         | OpenAI.ChatCompletionResponseChunk
         | OpenAI.ChatCompletionResponseErrorChunk
       >;
-  onFetchModelList?: (
+  onFetchModelList: (
     args: PluginArguments<OpenAI.ModelListResponse>
   ) => OpenAI.ModelListResponse;
-};
+}>;
