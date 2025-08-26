@@ -2,7 +2,7 @@ import { generateText, streamText } from 'ai';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { stream } from 'hono/streaming';
-import loadConfig from './config.ts';
+import { loadConfig } from './config.ts';
 import HooksHandler from './hooks.ts';
 import { llmClientFactory } from './llm-client-factory.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
@@ -11,6 +11,13 @@ import { UNAUTHORIZED } from './utils/response-code.ts';
 
 const app = new Hono();
 const config = await loadConfig();
+
+if (!config) {
+  throw new Error(
+    'Failed to load app configuration, please check database connection.'
+  );
+}
+
 app.use('/*', cors());
 
 app.get('/', (c) => {
@@ -68,6 +75,7 @@ app.post('/v1/chat/completions', async (c) => {
           break;
         }
         await s.write(AI_SDK_UTILS.encodeChunk(value));
+        await s.write(AI_SDK_UTILS.encodeChunk('[DONE]'));
       }
     });
   }

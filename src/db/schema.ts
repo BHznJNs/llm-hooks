@@ -9,7 +9,7 @@ import {
 import type { PluginConfig } from '../../common/types/config.ts';
 import type { LlmProvider } from '../llm-client-factory.ts';
 
-const themeEnum = pgEnum('theme_enum', ['dark', 'light', 'system']);
+export const themeEnum = pgEnum('theme_enum', ['dark', 'light', 'system']);
 
 export const appConfigs = pgTable('app_configs', {
   id: serial('id').primaryKey(),
