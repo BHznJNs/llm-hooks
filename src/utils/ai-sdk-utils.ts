@@ -1,6 +1,8 @@
 /**
  * biome-ignore-all lint/complexity/noBannedTypes: For conveniently pass TOOLS type parameter into the AI SDK methods
  */
+
+import { randomUUID } from 'node:crypto';
 import type {
   CallSettings,
   FinishReason,
@@ -65,6 +67,28 @@ export class AI_SDK_UTILS {
     client: ReturnType<typeof llmClientFactory>,
     openAiRequestParams: OpenAI.ChatCompletionRequest
   ): [boolean, AI_SDK_UTILS.ChatCompletionRequest<{}>] {
+    function convertToolsDefinitions(
+      tools: OpenAI.ChatCompletionTool[]
+    ): ToolSet {
+      const result: Record<
+        string,
+        { description?: string; inputSchema?: unknown }
+      > = {};
+      for (const tool of tools) {
+        if (tool.type !== 'function') {
+          continue;
+        }
+        result[tool.function.name] = {
+          description: tool.function.description,
+          inputSchema: tool.function.parameters,
+        };
+      }
+      return result as ToolSet;
+    }
+    const aiSdkTools =
+      openAiRequestParams.tools !== undefined
+        ? convertToolsDefinitions(openAiRequestParams.tools)
+        : undefined;
     return [
       Boolean(openAiRequestParams.stream),
       {
@@ -86,7 +110,7 @@ export class AI_SDK_UTILS {
             : nullToUndefined(openAiRequestParams.stop),
         seed: nullToUndefined(openAiRequestParams.seed),
 
-        tools: nullToUndefined(openAiRequestParams.tools),
+        tools: aiSdkTools,
         toolChoice: nullToUndefined(
           openAiRequestParams.tool_choice
         ) as ToolChoice<{}>,
@@ -106,36 +130,92 @@ export class AI_SDK_UTILS {
   }
 
   static chatCompletionChunkProcessor(
-    chunk: TextStreamPart<{}>
+    chunk: TextStreamPart<{}>,
+    chatId: string,
+    model: string
   ):
     | OpenAI.ChatCompletionResponseChunk
     | OpenAI.ChatCompletionResponseErrorChunk
     | null {
     const SECOND = 1000;
-    let chatId: string | null = null;
     const created = Math.floor(Date.now() / SECOND);
+    const chunkBase = {
+      id: chatId,
+      created,
+      model,
+      object: 'chat.completion.chunk',
+    } satisfies Partial<
+      | OpenAI.ChatCompletionResponseChunk
+      | OpenAI.ChatCompletionResponseErrorChunk
+    >;
     switch (chunk.type) {
-      case 'text-start': {
-        chatId = chunk.id;
+      case 'reasoning-start': {
         return {
-          id: chatId!,
-          created,
-          object: 'chat.completion.chunk',
-          model: '',
+          ...chunkBase,
           choices: [
-            { index: 0, delta: { role: 'assistant' }, finish_reason: null },
+            {
+              index: 0 as const,
+              delta: {
+                reasoning: {
+                  type: 'start',
+                  id: chunk.id,
+                  metadata: chunk.providerMetadata,
+                },
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'reasoning-delta': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: {
+                reasoning: {
+                  type: 'delta',
+                  id: chunk.id,
+                  content: chunk.text,
+                  metadata: chunk.providerMetadata,
+                },
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'reasoning-end': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: { reasoning: {} },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'text-start': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: { role: 'assistant', content: null },
+              finish_reason: null,
+            },
           ],
         };
       }
       case 'text-delta': {
         return {
-          id: chatId!,
-          created,
-          object: 'chat.completion.chunk',
-          model: '',
+          ...chunkBase,
           choices: [
             {
-              index: 0,
+              index: 0 as const,
               delta: { content: chunk.text },
               finish_reason: null,
             },
@@ -144,20 +224,96 @@ export class AI_SDK_UTILS {
       }
       case 'text-end': {
         return {
-          id: chatId!,
-          created,
-          model: '',
-          object: 'chat.completion.chunk',
-          choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+          ...chunkBase,
+          choices: [{ index: 0 as const, delta: {}, finish_reason: 'stop' }],
+        };
+      }
+      case 'tool-input-start': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [
+                  {
+                    index: 0,
+                    type: 'function',
+                    id: chunk.id,
+                    function: {
+                      name: chunk.toolName,
+                    },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'tool-input-delta': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: {
+                      arguments: chunk.delta,
+                    },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'tool-input-end': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: {},
+              finish_reason: null,
+            },
+          ],
+        };
+      }
+      case 'tool-call': {
+        return {
+          ...chunkBase,
+          choices: [
+            {
+              index: 0 as const,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    type: 'function',
+                    id: chunk.toolCallId,
+                    function: {
+                      name: chunk.toolName,
+                      arguments: chunk.input as string,
+                    },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
         };
       }
       case 'error': {
         return {
-          id: chatId!,
-          created,
-          model: '',
-          object: 'chat.completion.chunk',
-          choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+          ...chunkBase,
+          choices: [{ index: 0 as const, delta: {}, finish_reason: 'stop' }],
           error: {
             message: JSON.stringify(chunk.error),
             type: 'upstream_error',
@@ -167,10 +323,7 @@ export class AI_SDK_UTILS {
       case 'finish': {
         const aiSdkUsageData = chunk.totalUsage;
         return {
-          id: chatId!,
-          created,
-          model: '',
-          object: 'chat.completion.chunk',
+          ...chunkBase,
           choices: [
             {
               index: 0,
@@ -179,9 +332,9 @@ export class AI_SDK_UTILS {
             },
           ],
           usage: {
-            prompt_tokens: aiSdkUsageData.inputTokens!,
-            completion_tokens: aiSdkUsageData.outputTokens!,
-            total_tokens: aiSdkUsageData.totalTokens!,
+            prompt_tokens: aiSdkUsageData.inputTokens ?? 0,
+            completion_tokens: aiSdkUsageData.outputTokens ?? 0,
+            total_tokens: aiSdkUsageData.totalTokens ?? 0,
           },
         };
       }
@@ -190,14 +343,19 @@ export class AI_SDK_UTILS {
   }
 
   static chatCompletionStreamResponseFactory(
+    body: OpenAI.ChatCompletionRequest,
     result: StreamTextResult<{}, string>
   ): ReadableStream<OpenAI.ChatCompletionResponseChunk> {
     const stream = new ReadableStream({
       async start(controller) {
+        const chatId = `chatcmpl-${randomUUID()}`;
         try {
           for await (const chunk of result.fullStream) {
-            const openaiChunk =
-              AI_SDK_UTILS.chatCompletionChunkProcessor(chunk);
+            const openaiChunk = AI_SDK_UTILS.chatCompletionChunkProcessor(
+              chunk,
+              chatId,
+              body.model
+            );
             if (openaiChunk === null) {
               continue;
             }

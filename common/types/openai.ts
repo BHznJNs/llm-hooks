@@ -3,6 +3,7 @@ import type {
   ChatCompletionChunk,
   ChatCompletionCreateParams,
   ChatCompletionMessageToolCall,
+  ChatCompletionTool as ChatCompletionTool_,
 } from 'openai/resources/chat/completions';
 import type { Model } from 'openai/resources/models';
 
@@ -32,6 +33,7 @@ declare global {
     type ChatCompletionResponse = ChatCompletion;
     type ChatCompletionResponseChunk = ChatCompletionChunk;
     type ChatCompletionResponseErrorChunk = ErrorChunk;
+    type ChatCompletionTool = ChatCompletionTool_;
     type ChatCompletionResponseToolCall = ChatCompletionMessageToolCall;
     type ChatCompletionFinishReason =
       | 'stop'

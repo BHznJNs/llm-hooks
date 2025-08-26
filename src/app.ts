@@ -66,7 +66,7 @@ app.post('/v1/chat/completions', async (c) => {
   if (isStream) {
     const result = streamText(requestParams);
     const chatCompletionStream =
-      AI_SDK_UTILS.chatCompletionStreamResponseFactory(result);
+      AI_SDK_UTILS.chatCompletionStreamResponseFactory(body, result);
     return stream(c, async (s) => {
       const reader = chatCompletionStream.getReader();
       while (true) {
@@ -75,8 +75,8 @@ app.post('/v1/chat/completions', async (c) => {
           break;
         }
         await s.write(AI_SDK_UTILS.encodeChunk(value));
-        await s.write(AI_SDK_UTILS.encodeChunk('[DONE]'));
       }
+      await s.write(AI_SDK_UTILS.encodeChunk('[DONE]'));
     });
   }
   const result = await generateText(requestParams);
