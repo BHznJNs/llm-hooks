@@ -18,12 +18,23 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 
 ## 技术栈
 
+### 后端技术栈
+
 - **后端框架**: [Hono](https://hono.dev/) - 轻量级 Web 框架，支持多种运行环境
 - **语言**: TypeScript - 提供类型安全和更好的开发体验
 - **LLM SDK**: [@ai-sdk/*](https://sdk.vercel.ai/docs) - 用于与各种 LLM 提供商交互的 SDK
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
 - **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+
+### 前端技术栈
+
+- **前端框架**: [React](https://reactjs.org/) - 用于构建用户界面的 JavaScript 库
+- **构建工具**: [Vite](https://vitejs.dev/) - 新一代前端构建工具
+- **样式框架**: [TailwindCSS](https://tailwindcss.com/) - 用于快速 UI 开发的 CSS 框架
+- **状态管理**: [Zustand](https://github.com/pmndrs/zustand) - 轻量级状态管理库
+- **路由管理**: [@tanstack/react-router](https://tanstack.com/router) - 类型安全的路由解决方案
+- **数据获取**: [@tanstack/react-query](https://tanstack.com/query) - 用于数据获取和状态管理的库
 
 ## 项目结构
 
@@ -36,6 +47,26 @@ llm-hooks/
 │       ├── openai.ts          # OpenAI 类型定义
 │       ├── plugin.ts          # 插件类型定义
 │       └── provider.ts        # LLM 提供商类型定义
+├── frontend/                  # 前端项目目录
+│   ├── src/
+│   │   ├── api/               # 网络请求 hooks
+│   │   ├── components/        # React 组件
+│   │   ├── features/          # 功能模块
+│   │   ├── hooks/             # 自定义 hooks
+│   │   ├── lib/               # 工具库
+│   │   ├── pages/             # 页面组件
+│   │   ├── routes.tsx         # 路由配置
+│   │   ├── App.tsx            # 根组件
+│   │   ├── main.tsx           # 入口文件
+│   │   ├── index.css          # 全局样式
+│   │   └── input.css          # TailwindCSS 样式入口
+│   ├── public/                # 静态资源
+│   ├── index.html             # HTML 模板
+│   ├── package.json           # 前端依赖和脚本定义
+│   ├── tsconfig.json          # TypeScript 配置
+│   ├── tsconfig.node.json     # Node.js TypeScript 配置
+│   ├── vite.config.ts         # Vite 配置
+│   └── .env.local             # 前端环境变量
 ├── src/
 │   ├── app.ts                 # Hono 应用定义和路由处理
 │   ├── cache.ts               # 插件缓存机制
@@ -75,6 +106,14 @@ llm-hooks/
 - 遵循 TypeScript 最佳实践
 - 保持代码整洁和可读性
 
+#### 前端代码风格
+
+在包含上述代码风格的基础上，还需要遵循以下规则：
+
+- **样式规范**: 使用 TailwindCSS 类名，禁止写 css/scss
+- **网络请求**: 统一封装成 hooks，放在 `frontend/src/api/`
+- **页面路由**: 在 `frontend/src/pages/` 新增组件即自动成为路由
+
 ### 命名约定
 
 - 文件命名使用 kebab-case (短横线分隔)
@@ -104,6 +143,17 @@ git clone https://github.com/BHznJNs/llm-hooks
 npm install
 
 # 3. 启动开发服务器
+npm run dev
+```
+
+```bash
+# 1. 进入前端目录
+cd frontend
+
+# 2. 安装前端依赖
+npm install
+
+# 3. 启动前端开发服务器
 npm run dev
 ```
 
@@ -232,9 +282,14 @@ export default async function compile(
 ### 构建过程
 
 ```bash
-# 构建命令
+# 1. 进入前端目录
+cd frontend
+
+# 2. 构建前端项目
 npm run build
 ```
+
+TODO: 添加单可执行文件构建流程及 Docker 镜像构建流程
 
 ### 部署步骤
 
