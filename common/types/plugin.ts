@@ -12,10 +12,13 @@ export type Plugin = Partial<{
   fields: string[];
 
   beforeUpstreamRequest: (
-    args: PluginArguments<OpenAI.ChatCompletionRequest>
+    args: PluginArguments<{
+      requestParams: OpenAI.ChatCompletionRequest;
+      providerOptions: Record<string, unknown>;
+    }>
   ) => {
-    requestBody: OpenAI.ChatCompletionRequest;
-    providerOptions: Record<string, unknown>;
+    requestParams: OpenAI.ChatCompletionRequest;
+    providerOptions?: Record<string, unknown>;
   };
   onUpstreamChunk: (
     args: PluginArguments<OpenAI.ChatCompletionResponseChunk>

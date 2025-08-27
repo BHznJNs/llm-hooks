@@ -2,6 +2,7 @@ import { generateText, streamText } from 'ai';
 import type { Context } from 'hono';
 import { stream } from 'hono/streaming';
 import { loadConfig } from '../config.ts';
+import HooksHandler from '../hooks.ts';
 import { llmClientFactory } from '../llm-client-factory.ts';
 import { AI_SDK_UTILS } from '../utils/ai-sdk-utils.ts';
 import { extractAuthToken } from '../utils/field-utils.ts';
@@ -26,8 +27,15 @@ export async function chatCompletionsRoute(c: Context) {
     config.upstream.baseUrl
   );
   const body = await c.req.json<OpenAI.ChatCompletionRequest>();
+  const { requestParams: openAiRequestParams, providerOptions } =
+    await HooksHandler.beforeUpstreamRequest(config, body);
+
   const [isStream, requestParams] =
-    AI_SDK_UTILS.chatCompletionRequestParamsFactory(client, body);
+    AI_SDK_UTILS.chatCompletionRequestParamsFactory(
+      client,
+      openAiRequestParams,
+      providerOptions
+    );
 
   if (isStream) {
     const result = streamText(requestParams);

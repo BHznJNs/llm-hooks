@@ -63,9 +63,24 @@ export class AI_SDK_UTILS {
     return new TextEncoder().encode(`data: ${JSON.stringify(chunkData)}\n\n`);
   }
 
+  static extractOpenaiProviderOptions(
+    openAiRequestParams: OpenAI.ChatCompletionRequest
+  ): AI_SDK_UTILS.ProviderOptions {
+    return {
+      openai: {
+        user: openAiRequestParams.safety_identifier as JSONValue,
+        logitBias: openAiRequestParams.logit_bias as JSONValue,
+        logprobs: openAiRequestParams.logprobs as JSONValue,
+        parallelToolCalls: openAiRequestParams.parallel_tool_calls as JSONValue,
+        textVerbosity: openAiRequestParams.verbosity as JSONValue,
+      },
+    };
+  }
+
   static chatCompletionRequestParamsFactory(
     client: ReturnType<typeof llmClientFactory>,
-    openAiRequestParams: OpenAI.ChatCompletionRequest
+    openAiRequestParams: OpenAI.ChatCompletionRequest,
+    providerOptions: AI_SDK_UTILS.ProviderOptions
   ): [boolean, AI_SDK_UTILS.ChatCompletionRequest<{}>] {
     function convertToolsDefinitions(
       tools: OpenAI.ChatCompletionTool[]
@@ -115,16 +130,7 @@ export class AI_SDK_UTILS {
           openAiRequestParams.tool_choice
         ) as ToolChoice<{}>,
 
-        providerOptions: {
-          openai: {
-            user: openAiRequestParams.safety_identifier as JSONValue,
-            logitBias: openAiRequestParams.logit_bias as JSONValue,
-            logprobs: openAiRequestParams.logprobs as JSONValue,
-            parallelToolCalls:
-              openAiRequestParams.parallel_tool_calls as JSONValue,
-            textVerbosity: openAiRequestParams.verbosity as JSONValue,
-          },
-        },
+        providerOptions,
       },
     ];
   }
