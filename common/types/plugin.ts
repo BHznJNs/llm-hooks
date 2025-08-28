@@ -24,9 +24,7 @@ export type Plugin = Partial<{
     args: PluginArguments<OpenAI.ChatCompletionResponseChunk>
   ) => OpenAI.ChatCompletionResponseChunk | null;
   afterUpstreamResponse: (
-    args: PluginArguments<
-      OpenAI.ChatCompletionResponse | { collectedResponse: string }
-    >,
+    args: PluginArguments<OpenAI.ChatCompletionResponse | string>,
     isStream: boolean
   ) =>
     | OpenAI.ChatCompletionResponse

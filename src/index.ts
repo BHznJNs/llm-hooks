@@ -10,6 +10,7 @@ async function main() {
   honoNodeAdapter.serve(
     {
       fetch: app.fetch,
+      hostname: '0.0.0.0',
       port: Number(port),
     },
     (info) => {

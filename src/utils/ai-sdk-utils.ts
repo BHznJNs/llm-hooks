@@ -3,19 +3,21 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type {
-  CallSettings,
-  FinishReason,
-  GenerateTextResult,
-  JSONValue,
-  LanguageModel,
-  ModelMessage,
-  Prompt,
-  StopCondition,
-  StreamTextResult,
-  TextStreamPart,
-  ToolChoice,
-  ToolSet,
+import {
+  type CallSettings,
+  type FinishReason,
+  type GenerateTextResult,
+  type JSONValue,
+  jsonSchema,
+  type LanguageModel,
+  type ModelMessage,
+  type Prompt,
+  type StopCondition,
+  type StreamTextResult,
+  type TextStreamPart,
+  type ToolChoice,
+  type ToolSet,
+  tool,
 } from 'ai';
 import type { llmClientFactory } from '../llm-client-factory.ts';
 import { nullToUndefined } from './type-utils.ts';
@@ -51,18 +53,6 @@ export declare namespace AI_SDK_UTILS {
 
 // biome-ignore lint/complexity/noStaticOnlyClass: simulate a namespace with utils functions
 export class AI_SDK_UTILS {
-  static encodeChunk(
-    chunkData:
-      | string
-      | OpenAI.ChatCompletionResponseChunk
-      | OpenAI.ChatCompletionResponseErrorChunk
-  ): Uint8Array {
-    if (typeof chunkData === 'string') {
-      return new TextEncoder().encode(`data: ${chunkData}\n\n`);
-    }
-    return new TextEncoder().encode(`data: ${JSON.stringify(chunkData)}\n\n`);
-  }
-
   static extractOpenaiProviderOptions(
     openAiRequestParams: OpenAI.ChatCompletionRequest
   ): AI_SDK_UTILS.ProviderOptions {
@@ -85,20 +75,17 @@ export class AI_SDK_UTILS {
     function convertToolsDefinitions(
       tools: OpenAI.ChatCompletionTool[]
     ): ToolSet {
-      const result: Record<
-        string,
-        { description?: string; inputSchema?: unknown }
-      > = {};
-      for (const tool of tools) {
-        if (tool.type !== 'function') {
+      const result: Record<string, ReturnType<typeof tool>> = {};
+      for (const openAiTool of tools) {
+        if (openAiTool.type !== 'function') {
           continue;
         }
-        result[tool.function.name] = {
-          description: tool.function.description,
-          inputSchema: tool.function.parameters,
-        };
+        result[openAiTool.function.name] = tool({
+          description: openAiTool.function.description ?? '',
+          inputSchema: jsonSchema(openAiTool.function.parameters),
+        });
       }
-      return result as ToolSet;
+      return result;
     }
     const aiSdkTools =
       openAiRequestParams.tools !== undefined
@@ -161,13 +148,7 @@ export class AI_SDK_UTILS {
           choices: [
             {
               index: 0 as const,
-              delta: {
-                reasoning: {
-                  type: 'start',
-                  id: chunk.id,
-                  metadata: chunk.providerMetadata,
-                },
-              },
+              delta: { role: 'assistant', content: '' },
               finish_reason: null,
             },
           ],
@@ -180,12 +161,8 @@ export class AI_SDK_UTILS {
             {
               index: 0 as const,
               delta: {
-                reasoning: {
-                  type: 'delta',
-                  id: chunk.id,
-                  content: chunk.text,
-                  metadata: chunk.providerMetadata,
-                },
+                reasoning_content: chunk.text,
+                content: '',
               },
               finish_reason: null,
             },
@@ -198,7 +175,7 @@ export class AI_SDK_UTILS {
           choices: [
             {
               index: 0 as const,
-              delta: { reasoning: {} },
+              delta: { reasoning_content: '', content: '' },
               finish_reason: null,
             },
           ],
@@ -210,7 +187,7 @@ export class AI_SDK_UTILS {
           choices: [
             {
               index: 0 as const,
-              delta: { role: 'assistant', content: null },
+              delta: { role: 'assistant', content: '' },
               finish_reason: null,
             },
           ],
@@ -242,7 +219,7 @@ export class AI_SDK_UTILS {
               index: 0 as const,
               delta: {
                 role: 'assistant',
-                content: null,
+                content: '',
                 tool_calls: [
                   {
                     index: 0,
@@ -317,11 +294,15 @@ export class AI_SDK_UTILS {
         };
       }
       case 'error': {
+        const errorMessage: string =
+          'message' in chunk.error
+            ? (chunk.error.message as string)
+            : JSON.stringify(chunk.error);
         return {
           ...chunkBase,
           choices: [{ index: 0 as const, delta: {}, finish_reason: 'stop' }],
           error: {
-            message: JSON.stringify(chunk.error),
+            message: errorMessage,
             type: 'upstream_error',
           },
         };
