@@ -25,8 +25,8 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-white p-4 dark:bg-gray-800">
-      <div className="mb-8 font-bold text-2xl">LLM Hooks</div>
+    <div className="flex h-screen w-64 flex-col bg-white p-4 shadow-md dark:bg-gray-800">
+      <div className="mb-8 font-bold text-2xl dark:text-white">LLM Hooks</div>
 
       <nav className="flex-1">
         <ul className="space-y-2">
@@ -53,7 +53,6 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
       </nav>
 
       <div className="border-t pt-4 dark:border-gray-700">
-        {/* 主题切换图标按钮组 */}
         <div className="mb-4 flex items-center justify-between">
           <span className="font-medium text-gray-700 text-sm dark:text-gray-300">
             {t('theme')}
@@ -98,7 +97,6 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
           </div>
         </div>
 
-        {/* 语言切换下拉框 */}
         <div className="flex items-center justify-between">
           <label
             htmlFor="language-select"
@@ -110,7 +108,7 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
             id="language-select"
             value={language}
             onChange={handleLanguageChange}
-            className="ml-2 w-24 rounded border border-gray-300 bg-white p-1 pl-2 text-gray-700 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="ml-2 w-24 rounded border border-gray-300 bg-white p-1 pl-2 text-gray-700 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           >
             <option value="en">English</option>
             <option value="zh">简体中文</option>
