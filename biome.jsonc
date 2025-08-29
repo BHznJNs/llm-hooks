@@ -11,5 +11,12 @@
         "noUnnecessaryConditions": "off"
       }
     }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "useSortedAttributes": "off"
+      }
+    }
   }
 }

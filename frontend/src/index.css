@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* biome-ignore lint/suspicious/noUnknownAtRules: TailwindCSS directive */
+@custom-variant dark (&:where(.dark, .dark *));
