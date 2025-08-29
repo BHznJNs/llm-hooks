@@ -5,7 +5,7 @@ category: "后端服务"
 author: "BHznJNs"
 authorUrl: "https://github.com/BHznJNs"
 tags: ["TypeScript", "Hono", "LLM", "OpenAI", "Google", "Anthropic", "AI Gateway"]
-lastUpdated: "2025-08-23"
+lastUpdated: "2025-08-29"
 ---
 
 # llm-hooks
@@ -34,7 +34,7 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **样式框架**: [TailwindCSS](https://tailwindcss.com/) - 用于快速 UI 开发的 CSS 框架
 - **状态管理**: [Zustand](https://github.com/pmndrs/zustand) - 轻量级状态管理库
 - **路由管理**: [@tanstack/react-router](https://tanstack.com/router) - 类型安全的路由解决方案
-- **数据获取**: [@tanstack/react-query](https://tanstack.com/query) - 用于数据获取和状态管理的库
+- **图标库**: [Lucide React](https://lucide.dev/) - 用于界面图标的 SVG 图标库
 
 ## 项目结构
 
@@ -49,17 +49,15 @@ llm-hooks/
 │       └── provider.ts        # LLM 提供商类型定义
 ├── frontend/                  # 前端项目目录
 │   ├── src/
-│   │   ├── api/               # 网络请求 hooks
 │   │   ├── components/        # React 组件
-│   │   ├── features/          # 功能模块
-│   │   ├── hooks/             # 自定义 hooks
 │   │   ├── lib/               # 工具库
 │   │   ├── pages/             # 页面组件
-│   │   ├── routes.tsx         # 路由配置
+│   │   ├── stores/            # 状态管理
+│   │   ├── types/             # 类型定义
 │   │   ├── App.tsx            # 根组件
 │   │   ├── main.tsx           # 入口文件
-│   │   ├── index.css          # 全局样式
-│   │   └── input.css          # TailwindCSS 样式入口
+│   │   ├── routes.tsx         # 路由配置
+│   │   └── index.css          # 全局样式
 │   ├── public/                # 静态资源
 │   ├── index.html             # HTML 模板
 │   ├── package.json           # 前端依赖和脚本定义
@@ -272,6 +270,43 @@ export default async function compile(
 #### 应用数据管理 (`src/utils/app-data.ts`)
 
 提供跨平台的应用数据路径管理。
+
+## 前端功能实现
+
+### 路由系统
+
+前端使用 [@tanstack/react-router](https://tanstack.com/router) 实现声明式路由管理，目前包含以下页面路由：
+- `/` - Hooks 页面
+- `/logs` - 日志页面
+- `/settings` - 设置页面
+
+### 状态管理
+
+使用 [Zustand](https://github.com/pmndrs/zustand) 实现全局状态管理，包含：
+- 主题状态管理（浅色、深色、系统主题）
+- 语言状态管理（中英文切换）
+
+### 国际化
+
+前端支持中英文国际化，通过自定义翻译 Hook 实现：
+- 英语 (en)
+- 简体中文 (zh)
+
+### 主题系统
+
+支持三种主题模式：
+- 浅色模式 (light)
+- 深色模式 (dark)
+- 系统模式 (system) - 跟随操作系统主题偏好
+
+### UI 组件
+
+#### 侧边栏导航
+
+实现了一个侧边栏导航组件，包含：
+- 页面导航链接
+- 主题切换图标按钮组（Sun、Moon、Monitor 图标）
+- 语言切换下拉框
 
 ## 测试策略
 
