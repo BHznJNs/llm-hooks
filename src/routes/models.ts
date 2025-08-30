@@ -1,9 +1,9 @@
 import type { Context } from 'hono';
-import { loadConfig } from '../config.ts';
+import { loadAppConfig } from '../config.ts';
 import HooksHandler from '../hooks.ts';
 
 export async function modelsRoute(c: Context) {
-  const config = await loadConfig();
+  const config = await loadAppConfig();
   if (!config) {
     throw new Error(
       'Failed to load app configuration, please check database connection.'

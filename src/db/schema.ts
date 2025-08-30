@@ -1,20 +1,8 @@
-import {
-  boolean,
-  jsonb,
-  pgEnum,
-  pgTable,
-  serial,
-  text,
-} from 'drizzle-orm/pg-core';
-import type { PluginConfig } from '../../common/types/config.ts';
+import { boolean, jsonb, pgTable, serial, text } from 'drizzle-orm/pg-core';
 import type { LlmProvider } from '../llm-client-factory.ts';
-
-export const themeEnum = pgEnum('theme_enum', ['dark', 'light', 'system']);
 
 export const appConfigs = pgTable('app_configs', {
   id: serial('id').primaryKey(),
-  theme: themeEnum('theme').notNull(),
-  language: text('language').notNull(),
 
   upstream: jsonb('upstream')
     .$type<{
@@ -32,12 +20,13 @@ export const appConfigs = pgTable('app_configs', {
     }>()
     .notNull(),
 
+  // defines the order of plugins for hooks
   plugins: jsonb('plugins')
     .$type<{
-      beforeUpstreamRequest: Record<string, PluginConfig>;
-      onUpstreamChunk: Record<string, PluginConfig>;
-      afterUpstreamResponse: Record<string, PluginConfig>;
-      onFetchModelList: Record<string, PluginConfig>;
+      beforeUpstreamRequest: string[];
+      onUpstreamChunk: string[];
+      afterUpstreamResponse: string[];
+      onFetchModelList: string[];
     }>()
     .notNull(),
 });
@@ -46,7 +35,7 @@ export const pluginConfigs = pgTable('plugin_configs', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
-  dependencies: text('dependencies').array().notNull().default([]),
+  dependencies: text('dependencies').array(),
   params: jsonb('params').notNull().default({}),
 });
 

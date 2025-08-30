@@ -9,8 +9,6 @@ export type PluginArguments<T> = {
 };
 
 export type Plugin = Partial<{
-  fields: string[];
-
   beforeUpstreamRequest: (
     args: PluginArguments<{
       requestParams: OpenAI.ChatCompletionRequest;

@@ -18,15 +18,15 @@ export type AppConfig = {
   };
 
   plugins: {
-    beforeUpstreamRequest: Record<string, PluginConfig>;
-    onUpstreamChunk: Record<string, PluginConfig>;
-    afterUpstreamResponse: Record<string, PluginConfig>;
-    onFetchModelList: Record<string, PluginConfig>;
+    beforeUpstreamRequest: string[];
+    onUpstreamChunk: string[];
+    afterUpstreamResponse: string[];
+    onFetchModelList: string[];
   };
 };
 
 export type PluginConfig = {
   enabled: boolean;
-  dependencies: string[];
+  dependencies: string[] | null;
   params: Record<string, unknown>;
 };

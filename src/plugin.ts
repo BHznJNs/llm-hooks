@@ -3,16 +3,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PluginManager } from 'live-plugin-manager';
-import type { AppConfig, PluginConfig } from '../common/types/config.ts';
 import type { Plugin } from '../common/types/plugin.ts';
-import { cache } from './cache.ts';
-import { loadConfig, saveConfig } from './config.ts';
+import { savePluginConfigs } from './config.ts';
 import { pluginScripts } from './db/schema.ts';
 import compile from './utils/compile.ts';
 import { logger } from './utils/logger.ts';
 import { runtime } from './utils/runtime.ts';
 
 const moduleLogger = logger.moduleLogger('plugin');
+const pluginCache = new Map();
 const pluginManager = await (async () => {
   switch (runtime) {
     case 'docker':
@@ -99,6 +98,7 @@ async function _loadPlugin(pluginName: string): Promise<Plugin | null> {
       return null;
     }
     try {
+      await fs.mkdir(scriptPluginDirectory, { recursive: true });
       await fs.writeFile(pluginModulePath, pluginScriptContent);
     } catch (error) {
       moduleLogger.error(`Failed to write plugin: ${error}`);
@@ -121,14 +121,14 @@ async function _loadPlugin(pluginName: string): Promise<Plugin | null> {
 }
 
 export async function loadPlugin(pluginName: string): Promise<Plugin | null> {
-  if (cache.has(pluginName)) {
-    return cache.get(pluginName);
+  if (pluginCache.has(pluginName)) {
+    return pluginCache.get(pluginName);
   }
   const plugin = await _loadPlugin(pluginName);
   if (plugin === null) {
     return null;
   }
-  cache.set(pluginName, plugin);
+  pluginCache.set(pluginName, plugin);
   return plugin;
 }
 
@@ -170,32 +170,11 @@ async function savePluginScriptIntoDatabase(
     .onConflictDoUpdate({ target: pluginScripts.id, set: { content } });
 }
 
-async function updatePluginConfig(
-  name: string,
-  plugin: Plugin,
-  dependencies?: string[],
-  params?: Record<string, unknown>
-): Promise<void> {
-  const config = (await loadConfig())!;
-  for (const key of Object.keys(
-    config.plugins
-  ) as (keyof AppConfig['plugins'])[]) {
-    if (key in plugin) {
-      config.plugins[key][name] = {
-        enabled: true,
-        dependencies: dependencies ?? [],
-        params: params ?? {},
-      } satisfies PluginConfig;
-    }
-  }
-  await saveConfig(config);
-}
-
 export async function savePlugin(
   name: string,
   params: Record<string, unknown>,
-  content?: string,
-  dependencies?: string[]
+  dependencies: string[] | null = null,
+  content?: string // only for script plugin
 ): Promise<void> {
   if (isPluginAnNpmPackage(name)) {
     try {
@@ -216,11 +195,18 @@ export async function savePlugin(
     }
   }
 
+  await savePluginConfigs({
+    [name]: {
+      enabled: true,
+      dependencies,
+      params,
+    },
+  });
+
   const plugin = await loadPlugin(name);
   if (plugin === null) {
     moduleLogger.error(`Failed to load plugin after save: ${name}`);
     return;
   }
-  await updatePluginConfig(name, plugin, dependencies, params);
-  cache.set(name, plugin);
+  pluginCache.set(name, plugin);
 }
