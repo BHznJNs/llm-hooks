@@ -6,6 +6,7 @@ import {
 import App from './App';
 import HooksPage from './pages/HooksPage';
 import LogsPage from './pages/LogsPage';
+import PluginsPage from './pages/PluginsPage';
 import SettingsPage from './pages/SettingsPage';
 
 const rootRoute = createRootRoute({
@@ -30,7 +31,18 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, logsRoute, settingsRoute]);
+const pluginsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/plugins',
+  component: PluginsPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  logsRoute,
+  settingsRoute,
+  pluginsRoute,
+]);
 const router = createRouter({ routeTree });
 
 export default router;

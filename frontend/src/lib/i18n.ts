@@ -18,6 +18,9 @@ const translations: Translations = {
     system: 'System',
     english: 'English',
     chinese: 'Chinese',
+    plugins: 'Plugins',
+    'plugins-description': 'Manage your LLM hooks plugins here',
+    'plugins-coming-soon': 'Plugin management features coming soon...',
   },
   zh: {
     hooks: '钩子',
@@ -30,6 +33,9 @@ const translations: Translations = {
     system: '系统',
     english: '英文',
     chinese: '中文',
+    plugins: '插件',
+    'plugins-description': '在这里管理您的 LLM 钩子插件',
+    'plugins-coming-soon': '插件管理功能即将推出...',
   },
 };
 

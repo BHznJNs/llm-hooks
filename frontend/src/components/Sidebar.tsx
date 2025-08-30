@@ -1,5 +1,13 @@
 import { Link, useLocation } from '@tanstack/react-router';
-import { FileText, Monitor, Moon, Scroll, Settings, Sun } from 'lucide-react';
+import {
+  FileText,
+  Monitor,
+  Moon,
+  Puzzle,
+  Scroll,
+  Settings,
+  Sun,
+} from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 import { getRouteConfig } from '../lib/routes-config';
 import { useThemeStore } from '../stores/theme-store';
@@ -45,6 +53,7 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
                 {route.icon === 'settings' && (
                   <Settings className="mr-3 h-5 w-5" />
                 )}
+                {route.icon === 'plugin' && <Puzzle className="mr-3 h-5 w-5" />}
                 <span>{t(route.labelKey)}</span>
               </Link>
             </li>
