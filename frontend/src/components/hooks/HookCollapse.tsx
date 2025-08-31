@@ -40,7 +40,7 @@ export function HookCollapse({ hookType }: HookCollapseProps) {
       onOpenChange={setOpen}
       className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
     >
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between bg-gray-100 p-4 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
+      <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between p-4 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
         <div className="flex items-center gap-3">
           {open ? (
             <ChevronDown

@@ -19,7 +19,7 @@ export default function HooksPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="max-w-4xl flex-shrink-0 p-6">
+      <div className="flex-shrink-0 px-10 py-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="mt-2 text-gray-600 dark:text-gray-300">
