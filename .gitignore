@@ -9,7 +9,8 @@ lerna-debug.log*
 
 node_modules
 dist
-dist-ssr
+dist-frontend
+dist-src
 *.local
 
 # Editor directories and files
@@ -23,6 +24,5 @@ dist-ssr
 *.sln
 *.sw?
 
-*.js
 .env
 .env.docker

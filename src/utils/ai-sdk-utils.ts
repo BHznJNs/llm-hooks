@@ -295,6 +295,8 @@ export class AI_SDK_UTILS {
       }
       case 'error': {
         const errorMessage: string =
+          typeof chunk.error === 'object' &&
+          chunk.error !== null &&
           'message' in chunk.error
             ? (chunk.error.message as string)
             : JSON.stringify(chunk.error);
