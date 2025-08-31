@@ -38,7 +38,7 @@ export function HookCollapse({ hookType }: HookCollapseProps) {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+      className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
     >
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between p-4 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
         <div className="flex items-center gap-3">

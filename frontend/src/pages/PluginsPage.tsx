@@ -51,7 +51,7 @@ export default function PluginsPage() {
     <div className="min-h-screen bg-gray-50 px-10 py-6 dark:bg-gray-900">
       <header className="mb-6">
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-8 rounded-lg bg-white px-6 py-4 shadow-custom dark:bg-gray-800">
+          <div className="flex items-center gap-8 rounded-lg border border-gray-200 bg-white px-6 py-4 shadow-custom dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-baseline gap-3 border-gray-200 border-r pr-8 dark:border-gray-600">
               <p className="font-bold text-gray-900 dark:text-white">
                 {t('enabled')}

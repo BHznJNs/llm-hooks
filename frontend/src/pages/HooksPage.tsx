@@ -18,9 +18,9 @@ export default function HooksPage() {
   const { hasChanges, isSaving, saveChanges } = useHooksStore();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col">
       <div className="flex-shrink-0 px-10 py-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <p className="mt-2 text-gray-600 dark:text-gray-300">
               {t('hooks-description')}
@@ -44,7 +44,7 @@ export default function HooksPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1 px-10 pb-6">
         <div className="mx-auto max-w-4xl space-y-4">
           {HOOK_TYPES.map((hookType) => (
             <HookCollapse key={hookType} hookType={hookType} />

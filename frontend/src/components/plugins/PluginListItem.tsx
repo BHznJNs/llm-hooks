@@ -24,7 +24,7 @@ export function PluginListItem({
     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
 
   return (
-    <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
+    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-baseline gap-2">
         <span className="font-semibold text-gray-900 dark:text-white">
           {plugin.name}
