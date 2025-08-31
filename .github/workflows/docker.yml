@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/bhznjns/llm-hooks
   IMAGE_TAG:  ${{ github.sha }}
 
 jobs:
