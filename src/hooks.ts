@@ -10,7 +10,7 @@ import { logger } from './utils/logger.ts';
 import { responseStreamProcessor } from './utils/stream-utils.ts';
 
 const moduleLogger = logger.moduleLogger('hooks');
-type HookTypes = keyof AppConfig['plugins'];
+type HookType = keyof AppConfig['plugins'];
 
 function assistantModelFactory(config: AppConfig): LlmModel {
   const client = llmClientFactory(
@@ -26,7 +26,7 @@ function pluginLoggerFactory(hookName: string, pluginName: string): Logger {
 }
 
 async function hookWrapper(
-  hookName: HookTypes,
+  hookName: HookType,
   config: AppConfig,
   callback: (
     plugin: Plugin,

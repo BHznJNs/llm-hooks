@@ -15,11 +15,7 @@ const HOOK_TYPES: HookType[] = [
 export default function HooksPage() {
   const { language } = useLanguageStore();
   const { t } = useTranslation(language);
-  const { hasChanges, isLoading, saveChanges } = useHooksStore();
-
-  const handleSave = async () => {
-    await saveChanges();
-  };
+  const { hasChanges, isSaving, saveChanges } = useHooksStore();
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -33,17 +29,17 @@ export default function HooksPage() {
 
           <button
             type="button"
-            onClick={handleSave}
-            disabled={!hasChanges || isLoading}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
-              hasChanges && !isLoading
+            onClick={saveChanges}
+            disabled={!hasChanges}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
+              hasChanges
                 ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg'
                 : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
             }
             `}
           >
             <Save size={16} />
-            {isLoading ? t('saving') : t('save-changes')}
+            {isSaving ? t('saving') : t('save-changes')}
           </button>
         </div>
       </div>
@@ -51,11 +47,7 @@ export default function HooksPage() {
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         <div className="mx-auto max-w-4xl space-y-4">
           {HOOK_TYPES.map((hookType) => (
-            <HookCollapse
-              key={hookType}
-              hookType={hookType}
-              language={language}
-            />
+            <HookCollapse key={hookType} hookType={hookType} />
           ))}
         </div>
       </div>

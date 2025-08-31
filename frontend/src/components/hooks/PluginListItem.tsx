@@ -1,10 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import type { PluginItem } from '../../types/hooks';
 
 type PluginListItemProps = {
-  plugin: PluginItem;
+  plugin: { name: string; enabled: boolean };
   isDragOverlay?: boolean;
 };
 
@@ -19,7 +18,7 @@ export function PluginListItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: plugin.id });
+  } = useSortable({ id: plugin.name });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -34,23 +33,20 @@ export function PluginListItem({
         ${plugin.enabled ? '' : 'opacity-60'}
       `}
     >
-      <button
-        className="cursor-grab text-gray-400 hover:cursor-grabbing hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+      <div
+        className="flex flex-1 cursor-grab items-center gap-3 hover:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
-        <GripVertical size={16} />
-      </button>
+        <div className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+          <GripVertical size={16} />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <h4 className="truncate font-medium text-gray-900 dark:text-gray-100">
-          {plugin.name}
-        </h4>
-        {plugin.description && (
-          <p className="truncate text-gray-500 text-sm dark:text-gray-400">
-            {plugin.description}
-          </p>
-        )}
+        <div className="min-w-0 flex-1">
+          <h4 className="select-none truncate font-medium text-gray-900 dark:text-gray-100">
+            {plugin.name}
+          </h4>
+        </div>
       </div>
 
       <div

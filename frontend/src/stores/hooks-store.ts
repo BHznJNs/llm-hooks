@@ -1,98 +1,55 @@
 import { create } from 'zustand';
-import type { HooksState, HookType, PluginItem } from '../types/hooks';
+import type { HooksState, HookType } from '../types/hooks';
 
-const SAVE_TIMEOUT = 1000;
-
-type HooksActions = {
-  updateHookOrder: (hookType: HookType, newOrder: string[]) => void;
-  setLoading: (loading: boolean) => void;
-  markChanged: () => void;
-  saveChanges: () => Promise<void>;
-  resetChanges: () => void;
-  setAvailablePlugins: (plugins: PluginItem[]) => void;
-};
-
-const initialHooksState: Omit<HooksState, 'availablePlugins'> = {
+const initialHooksState: HooksState = {
   hooks: {
-    beforeUpstreamRequest: [],
+    beforeUpstreamRequest: ['replace-model', 'extra-model'],
     onUpstreamChunk: [],
     afterUpstreamResponse: [],
     onFetchModelList: [],
   },
-  isLoading: false,
-  hasChanges: false,
+  pluginStates: {
+    'replace-model': true,
+    'extra-model': false,
+  },
 };
 
-// Mock data for development
-const mockPlugins: PluginItem[] = [
-  {
-    id: 'plugin-1',
-    name: 'Logger Plugin',
-    description: 'Logs requests and responses',
-    enabled: true,
-  },
-  {
-    id: 'plugin-2',
-    name: 'Rate Limiter',
-    description: 'Controls request rate',
-    enabled: true,
-  },
-  {
-    id: 'plugin-3',
-    name: 'Cache Plugin',
-    description: 'Caches responses for better performance',
-    enabled: false,
-  },
-  {
-    id: 'plugin-4',
-    name: 'Auth Validator',
-    description: 'Validates authentication tokens',
-    enabled: true,
-  },
-];
+type HooksActions = {
+  hasChanges: boolean;
+  isSaving: boolean;
+  saveChanges: () => Promise<void>;
+  updateHookOrder: (hookType: HookType, newOrder: string[]) => void;
+  setPluginStates: (plugins: Record<string, boolean>) => void;
+};
 
 export const useHooksStore = create<HooksState & HooksActions>((set) => ({
   ...initialHooksState,
-  availablePlugins: mockPlugins,
+  hasChanges: false,
+  isSaving: false,
+
+  saveChanges: async () => {
+    set((_state) => ({
+      isSaving: true,
+      hasChanges: false,
+    }));
+    // TODO: Call save API
+    await fetch('/api/...');
+    set((_state) => ({
+      isSaving: false,
+    }));
+  },
 
   updateHookOrder: (hookType, newOrder) => {
     set((state) => ({
+      hasChanges: true,
       hooks: {
         ...state.hooks,
         [hookType]: newOrder,
       },
-      hasChanges: true,
     }));
   },
 
-  setLoading: (loading) => {
-    set({ isLoading: loading });
-  },
-
-  markChanged: () => {
-    set({ hasChanges: true });
-  },
-
-  saveChanges: async () => {
-    set({ isLoading: true });
-
-    try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, SAVE_TIMEOUT));
-
-      set({ hasChanges: false });
-    } catch {
-      // TODO: Add proper error handling
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  resetChanges: () => {
-    set({ hasChanges: false });
-  },
-
-  setAvailablePlugins: (plugins) => {
-    set({ availablePlugins: plugins });
+  setPluginStates: (plugins) => {
+    set({ pluginStates: plugins });
   },
 }));

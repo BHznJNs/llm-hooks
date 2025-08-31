@@ -10,15 +10,12 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 import { getRouteConfig } from '../lib/routes-config';
+import { useLanguageStore } from '../stores/language-store';
 import { useThemeStore } from '../stores/theme-store';
 import type { Language } from '../types';
 
-type SidebarProps = {
-  language: Language;
-  setLanguage: (language: Language) => void;
-};
-
-export default function Sidebar({ language, setLanguage }: SidebarProps) {
+export default function Sidebar() {
+  const { language, setLanguage } = useLanguageStore();
   const { theme, setTheme } = useThemeStore();
   const { t } = useTranslation(language);
   const routes = getRouteConfig(language);

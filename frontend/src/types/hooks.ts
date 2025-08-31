@@ -1,25 +1,8 @@
-export type HookType =
-  | 'beforeUpstreamRequest'
-  | 'onUpstreamChunk'
-  | 'afterUpstreamResponse'
-  | 'onFetchModelList';
+import type { AppConfig } from '../../../common/types/config.ts';
 
-export type PluginItem = {
-  id: string;
-  name: string;
-  description?: string;
-  enabled: boolean;
-  config?: Record<string, unknown>;
-};
-
-export type HookConfig = {
-  type: HookType;
-  plugins: string[];
-};
+export type HookType = keyof AppConfig['plugins'];
 
 export type HooksState = {
   hooks: Record<HookType, string[]>;
-  availablePlugins: PluginItem[];
-  isLoading: boolean;
-  hasChanges: boolean;
+  pluginStates: Record<string, boolean>;
 };

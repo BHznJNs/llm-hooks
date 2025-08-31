@@ -6,36 +6,32 @@ import {
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '../../lib/i18n';
 import { useHooksStore } from '../../stores/hooks-store';
-import type { Language } from '../../types';
-import type { PluginItem } from '../../types/hooks';
+import { useLanguageStore } from '../../stores/language-store';
+import type { HookType } from '../../types/hooks';
 import { PluginList } from './PluginList';
 
 type HookCollapseProps = {
-  hookType:
-    | 'beforeUpstreamRequest'
-    | 'onUpstreamChunk'
-    | 'afterUpstreamResponse'
-    | 'onFetchModelList';
-  language: Language;
+  hookType: HookType;
 };
 
-export function HookCollapse({ hookType, language }: HookCollapseProps) {
-  const { hooks, availablePlugins, updateHookOrder } = useHooksStore();
+export function HookCollapse({ hookType }: HookCollapseProps) {
+  const { language } = useLanguageStore();
+  const { hooks, pluginStates, updateHookOrder } = useHooksStore();
+  const { t } = useTranslation(language);
   const [open, setOpen] = useState(true);
 
-  const hookPlugins = hooks[hookType]
-    .map((pluginId) => availablePlugins.find((p) => p.id === pluginId))
-    .filter((plugin): plugin is PluginItem => Boolean(plugin));
+  const hookPlugins = hooks[hookType].map((pluginName) => ({
+    name: pluginName,
+    enabled: pluginStates[pluginName] ?? false,
+  }));
 
-  const hookLabels = {
-    beforeUpstreamRequest:
-      language === 'en' ? 'Before Upstream Request' : '请求前处理',
-    onUpstreamChunk: language === 'en' ? 'On Upstream Chunk' : '流式响应处理',
-    afterUpstreamResponse:
-      language === 'en' ? 'After Upstream Response' : '响应后处理',
-    onFetchModelList:
-      language === 'en' ? 'On Fetch Model List' : '模型列表获取处理',
+  const hookLabels: Record<HookType, string> = {
+    beforeUpstreamRequest: t('before-upstream-request'),
+    onUpstreamChunk: t('on-upstream-chunk'),
+    afterUpstreamResponse: t('after-upstream-response'),
+    onFetchModelList: t('on-fetch-model-list'),
   };
 
   return (
@@ -62,7 +58,7 @@ export function HookCollapse({ hookType, language }: HookCollapseProps) {
           </h3>
         </div>
         <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 font-medium text-blue-800 text-xs dark:bg-blue-900 dark:text-blue-200">
-          {hookPlugins.length}
+          {hooks[hookType].length}
         </span>
       </CollapsibleTrigger>
 
