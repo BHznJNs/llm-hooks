@@ -1,10 +1,12 @@
 FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app
+COPY package*.json ./
 COPY frontend ./frontend
 COPY common ./common
+RUN npm ci
 RUN cd frontend && npm ci
-RUN cd frontend && npm run build
+RUN npm run build:frontend
 
 # --- --- --- --- --- ---
 
