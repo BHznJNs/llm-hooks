@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { settingsApi } from '../api/settings.ts';
 
 export type LlmProvider = 'openai' | 'google' | 'anthropic';
 
@@ -38,33 +39,14 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     set({ isLoading: true });
 
     try {
-      // TODO: 这里应该调用 API 从后端获取设置
-      // 目前只是模拟异步操作
-      const SAVE_DELAY = 1000;
-      await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY));
-
-      // 模拟从后端获取的设置数据
-      const mockSettings = {
-        upstream: {
-          baseUrl: 'https://api.openai.com/v1',
-          provider: 'openai' as LlmProvider,
-        },
-        assistant: {
-          baseUrl: 'https://api.openai.com/v1',
-          provider: 'openai' as LlmProvider,
-          model: 'gpt-4',
-          apiKey: 'sk-123456',
-        },
-      };
-
+      const data = await settingsApi.getSettings();
       set({
-        upstream: mockSettings.upstream,
-        assistant: mockSettings.assistant,
+        upstream: data.upstream,
+        assistant: data.assistant,
         hasChanges: false,
         isLoading: false,
       });
     } catch (error) {
-      // TODO: 后续应该使用更完善的错误处理机制
       set({ isLoading: false });
       throw error;
     }
@@ -74,14 +56,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     set({ isSaving: true });
 
     try {
-      // TODO: 这里应该调用 API 保存设置到后端
-      // 目前只是模拟异步操作
-      const SAVE_DELAY = 1000;
-      await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY));
-
-      set({ hasChanges: false, isSaving: false });
+      const { upstream, assistant } = useSettingsStore.getState();
+      if (upstream && assistant) {
+        await settingsApi.updateSettings({ upstream, assistant });
+        set({ hasChanges: false, isSaving: false });
+      }
     } catch (error) {
-      // TODO: 后续应该使用更完善的错误处理机制
       set({ isSaving: false });
       throw error; // 重新抛出错误让调用方处理
     }

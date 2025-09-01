@@ -6,6 +6,7 @@ import { ProviderSelect } from '../components/settings/ProviderSelect';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { useSettingsStore } from '../stores/settings-store';
+import { useToastStore } from '../stores/toast-store';
 
 const validateUrl = (url: string): boolean => {
   if (!url) {
@@ -22,6 +23,7 @@ const validateUrl = (url: string): boolean => {
 export default function SettingsPage() {
   const { language } = useLanguageStore();
   const { t } = useTranslation(language);
+  const { showToast } = useToastStore();
   const {
     upstream,
     assistant,
@@ -41,11 +43,17 @@ export default function SettingsPage() {
     assistantApiKey: '',
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on mounted callback
   useEffect(() => {
-    if (upstream === null || assistant === null) {
-      loadSettings();
+    if (isLoading) {
+      return;
     }
-  }, [upstream, assistant, loadSettings]);
+    if (upstream === null || assistant === null) {
+      loadSettings().catch((error) => {
+        showToast(`加载设置失败：${error.message}`, 'error');
+      });
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors = {
@@ -95,7 +103,20 @@ export default function SettingsPage() {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => validateForm() && saveSettings()}
+              onClick={async () => {
+                if (!validateForm()) {
+                  return;
+                }
+                try {
+                  await saveSettings();
+                  showToast('设置保存成功', 'success');
+                } catch (error) {
+                  showToast(
+                    `保存设置失败：${(error as Error).message}`,
+                    'error'
+                  );
+                }
+              }}
               disabled={!hasChanges || isSaving}
               className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
                 hasChanges && !isSaving

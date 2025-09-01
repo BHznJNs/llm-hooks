@@ -1,6 +1,7 @@
 import { Outlet } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
+import ToastProvider from './providers/ToastProvider';
 import { useThemeStore } from './stores/theme-store';
 
 export default function App() {
@@ -61,6 +62,8 @@ export default function App() {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+
+      <ToastProvider />
     </div>
   );
 }
