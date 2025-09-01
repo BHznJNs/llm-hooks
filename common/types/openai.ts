@@ -4,8 +4,8 @@ import type {
   ChatCompletionCreateParams,
   ChatCompletionMessageToolCall,
   ChatCompletionTool as ChatCompletionTool_,
-} from 'openai/resources/chat/completions';
-import type { Model } from 'openai/resources/models';
+  Model,
+} from 'openai/resources';
 
 type ErrorChunk = {
   id: string;
