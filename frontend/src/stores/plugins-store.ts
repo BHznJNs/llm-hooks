@@ -26,7 +26,7 @@ const mockPlugins: Plugin[] = [
 
 export type PluginsState = {
   plugins: Plugin[];
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
 
   // Actions
@@ -41,17 +41,17 @@ export type PluginsState = {
 
 export const usePluginsStore = create<PluginsState>((set) => ({
   plugins: [],
-  loading: false,
+  isLoading: false,
   error: null,
 
   fetchPlugins: async () => {
     const API_CALL_DELAY = 500;
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       await new Promise((resolve) => setTimeout(resolve, API_CALL_DELAY));
-      set({ plugins: mockPlugins, loading: false });
+      set({ plugins: mockPlugins, isLoading: false });
     } catch {
-      set({ error: 'Failed to fetch plugins', loading: false });
+      set({ error: 'Failed to fetch plugins', isLoading: false });
     }
   },
 

@@ -5,11 +5,10 @@ import {
 } from '@radix-ui/react-collapsible';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-
+import type { HookType } from '../../../../common/types/hook';
 import { useTranslation } from '../../lib/i18n';
 import { useHooksStore } from '../../stores/hooks-store';
 import { useLanguageStore } from '../../stores/language-store';
-import type { HookType } from '../../types/hooks';
 import { PluginList } from './PluginList';
 
 type HookCollapseProps = {
@@ -20,12 +19,12 @@ export function HookCollapse({ hookType }: HookCollapseProps) {
   const { language } = useLanguageStore();
   const { hooks, pluginStates, updateHookOrder } = useHooksStore();
   const { t } = useTranslation(language);
-  const [open, setOpen] = useState(true);
 
   const hookPlugins = hooks[hookType].map((pluginName) => ({
     name: pluginName,
     enabled: pluginStates[pluginName] ?? false,
   }));
+  const [open, setOpen] = useState(Boolean(hookPlugins.length));
 
   const hookLabels: Record<HookType, string> = {
     beforeUpstreamRequest: t('before-upstream-request'),

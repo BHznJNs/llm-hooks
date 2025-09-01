@@ -96,6 +96,8 @@ const translations: Translations = {
     'remove-metadata': 'Remove Metadata',
     'edit-metadata': 'Edit Metadata',
     'plugin-content-placeholder': 'Enter your plugin code here...',
+    refresh: 'Refresh',
+    dismiss: 'Dismiss',
   },
   zh: {
     hooks: '钩子',
@@ -186,6 +188,8 @@ const translations: Translations = {
     'remove-metadata': '移除元数据',
     'edit-metadata': '编辑元数据',
     'plugin-content-placeholder': '在此处输入您的插件代码...',
+    refresh: '刷新',
+    dismiss: '忽略',
   },
 };
 

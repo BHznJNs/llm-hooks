@@ -19,7 +19,7 @@ import {
   type ToolSet,
   tool,
 } from 'ai';
-import type { llmClientFactory } from '../llm-client-factory.ts';
+import type { llmClientFactory } from './llm-client-factory.ts';
 import { nullToUndefined } from './type-utils.ts';
 
 const finishReasonMap = new Map<

@@ -1,3 +1,5 @@
+import type { HookType } from './hook.ts';
+
 export type LlmProvider = 'openai' | 'google' | 'anthropic';
 export type AppTheme = 'dark' | 'light' | 'system';
 
@@ -17,16 +19,11 @@ export type AppConfig = {
     apiKey: string;
   };
 
-  plugins: {
-    beforeUpstreamRequest: string[];
-    onUpstreamChunk: string[];
-    afterUpstreamResponse: string[];
-    onFetchModelList: string[];
-  };
+  plugins: Record<HookType, string[]>;
 };
 
 export type PluginConfig = {
   enabled: boolean;
-  dependencies: string[] | null;
+  dependencies: string[];
   params: Record<string, unknown>;
 };

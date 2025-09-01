@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
-import type { HookType } from '../../types/hooks';
+import type { HookType } from '../../../../common/types/hook';
 import { PluginListItem } from './PluginListItem';
 
 type PluginListProps = {

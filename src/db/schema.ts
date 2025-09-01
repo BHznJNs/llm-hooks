@@ -1,5 +1,5 @@
 import { boolean, jsonb, pgTable, serial, text } from 'drizzle-orm/pg-core';
-import type { LlmProvider } from '../llm-client-factory.ts';
+import type { LlmProvider } from '../utils/llm-client-factory.ts';
 
 export const appConfigs = pgTable('app_configs', {
   id: serial('id').primaryKey(),
@@ -35,7 +35,7 @@ export const pluginConfigs = pgTable('plugin_configs', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
-  dependencies: text('dependencies').array(),
+  dependencies: text('dependencies').array().notNull().default([]),
   params: jsonb('params').notNull().default({}),
 });
 

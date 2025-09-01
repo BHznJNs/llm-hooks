@@ -1,16 +1,16 @@
 import { generateText, streamText } from 'ai';
 import type { Context } from 'hono';
 import { type SSEStreamingApi, streamSSE } from 'hono/streaming';
-import { loadAppConfig } from '../config.ts';
+import appConfigController from '../controllers/app-config.ts';
 import HooksHandler from '../hooks.ts';
-import { llmClientFactory } from '../llm-client-factory.ts';
 import { AI_SDK_UTILS } from '../utils/ai-sdk-utils.ts';
 import { extractAuthToken } from '../utils/field-utils.ts';
+import { llmClientFactory } from '../utils/llm-client-factory.ts';
 import { UNAUTHORIZED } from '../utils/response-code.ts';
 import { responseStreamProcessor } from '../utils/stream-utils.ts';
 
 export async function chatCompletionsRoute(c: Context) {
-  const config = await loadAppConfig();
+  const config = await appConfigController.load();
   if (!config) {
     throw new Error(
       'Failed to load app configuration, please check database connection.'

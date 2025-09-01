@@ -5,7 +5,7 @@ category: "后端服务"
 author: "BHznJNs"
 authorUrl: "https://github.com/BHznJNs"
 tags: ["TypeScript", "Hono", "LLM", "OpenAI", "Google", "Anthropic", "AI Gateway"]
-lastUpdated: "2025-08-29"
+lastUpdated: "2025-09-01"
 ---
 
 # llm-hooks
@@ -26,6 +26,7 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
 - **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **插件管理**: [live-plugin-manager](https://github.com/sgenoni/live-plugin-manager) - 动态插件管理
 
 ### 前端技术栈
 
@@ -35,6 +36,7 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **状态管理**: [Zustand](https://github.com/pmndrs/zustand) - 轻量级状态管理库
 - **路由管理**: [@tanstack/react-router](https://tanstack.com/router) - 类型安全的路由解决方案
 - **图标库**: [Lucide React](https://lucide.dev/) - 用于界面图标的 SVG 图标库
+- **UI 组件**: [Radix UI](https://www.radix-ui.com/) - 无障碍访问性 UI 组件库
 
 ## 项目结构
 
@@ -43,6 +45,7 @@ llm-hooks/
 ├── common/
 │   └── types/
 │       ├── config.ts          # 配置类型定义
+│       ├── hook.ts            # Hook 类型定义
 │       ├── index.ts           # 类型导出入口
 │       ├── openai.ts          # OpenAI 类型定义
 │       ├── plugin.ts          # 插件类型定义
@@ -67,23 +70,34 @@ llm-hooks/
 │   └── .env.local             # 前端环境变量
 ├── src/
 │   ├── app.ts                 # Hono 应用定义和路由处理
-│   ├── cache.ts               # 插件缓存机制
 │   ├── hooks.ts               # Hook 处理器
 │   ├── index.ts               # 应用入口文件，支持多种部署环境
-│   ├── llm-client-factory.ts  # LLM 客户端工厂函数
-│   ├── config.ts         # 配置加载函数
-│   ├── plugin.ts         # 插件加载函数
+│   ├── controllers/           # 控制器层
+│   │   ├── app-config.ts      # 应用配置控制器
+│   │   ├── plugin-config.ts   # 插件配置控制器
+│   │   └── plugin-instance.ts # 插件实例控制器
 │   ├── db/
 │   │   ├── index.ts           # 数据库连接和导出
 │   │   └── schema.ts          # 数据库模式定义
+│   ├── openai-routes/         # OpenAI API 路由
+│   │   ├── chat-completions.ts # 聊天完成接口
+│   │   ├── index.ts           # 路由导出
+│   │   └── models.ts          # 模型列表接口
+│   ├── routes/                # API 路由
+│   │   ├── hooks.ts           # Hook 配置管理
+│   │   ├── index.ts           # 路由导出
+│   │   ├── plugins.ts         # 插件管理
+│   │   └── settings.ts        # 设置管理
 │   └── utils/
 │       ├── ai-sdk-utils.ts    # AI SDK 工具函数
 │       ├── app-data.ts        # 应用数据工具
 │       ├── compile.ts         # TypeScript 编译工具
 │       ├── field-utils.ts     # 字段处理工具
 │       ├── logger.ts          # 日志记录工具
+│       ├── llm-client-factory.ts # LLM 客户端工厂函数
 │       ├── response-code.ts   # HTTP 响应代码工具
 │       ├── runtime.ts         # 运行时环境工具
+│       ├── stream-utils.ts    # 流式处理工具
 │       └── type-utils.ts      # 类型工具函数
 ├── drizzle/                   # 数据库迁移文件
 ├── .gitignore                 # Git 忽略文件
@@ -93,7 +107,7 @@ llm-hooks/
 ├── drizzle.config.ts          # 数据库迁移配置
 ├── package.json               # 项目依赖和脚本定义
 ├── package-lock.json          # 依赖锁文件
-├── tsconfig.json              # TypeScript 配置
+└── tsconfig.json              # TypeScript 配置
 ```
 
 ## 开发指南
@@ -103,6 +117,7 @@ llm-hooks/
 - 使用 [biome](https://biomejs.dev/) 进行代码格式化和 linting
 - 遵循 TypeScript 最佳实践
 - 保持代码整洁和可读性
+- 使用面向对象的设计模式，控制器层负责业务逻辑
 
 #### 前端代码风格
 
@@ -117,6 +132,7 @@ llm-hooks/
 - 文件命名使用 kebab-case (短横线分隔)
 - 变量和函数命名使用 camelCase (驼峰命名)
 - 类型定义使用 PascalCase (帕斯卡命名)
+- 类名使用 PascalCase (帕斯卡命名)
 
 ### Git 工作流
 
@@ -157,6 +173,21 @@ npm run dev
 
 ## 核心功能实现
 
+### 架构设计
+
+项目采用分层架构设计：
+
+1. **控制器层** (`src/controllers/`): 负责业务逻辑处理
+   - `AppConfigController`: 应用配置管理
+   - `PluginConfigController`: 插件配置管理
+   - `PluginInstanceController`: 插件实例管理
+
+2. **路由层** (`src/routes/`, `src/openai-routes/`): 处理 HTTP 请求
+   - API 路由统一管理
+   - OpenAI 兼容路由分离
+
+3. **工具层** (`src/utils/`): 提供通用工具函数
+
 ### 数据持久化
 
 #### 本地运行
@@ -173,27 +204,25 @@ npm run dev
 
 ### API 路由处理
 
-项目使用 Hono 框架定义了完整的 API 路由，包括根路径、模型列表和聊天完成接口。
+项目使用 Hono 框架定义了完整的 API 路由，采用模块化设计：
 
-#### 根路径路由
+#### 管理接口 (`/api/`)
+- `/api/hooks` - Hook 配置管理
+- `/api/plugins` - 插件管理
+- `/api/settings` - 系统设置
 
-返回项目的前端静态文件（未实现）。
-
-#### 模型列表路由
-
-项目现在实际代理上游 API 的模型列表请求，支持完整的请求头处理和响应转发，并支持插件 Hook 处理添加特殊模型。
-
-#### /chat/completions 接口
-
-项目实现了完整的 `/chat/completions` 接口，支持流式和非流式响应。
+#### OpenAI 兼容接口 (`/openai/`)
+- `/openai/chat/completions` - 聊天完成接口
+- `/openai/models` - 模型列表接口
 
 ### Hook 机制实现
 
-项目计划支持 Hook 处理机制，支持在请求和响应的不同阶段对数据进行处理。需要支持以下几个 Hook：
-- beforeUpstreamRequest
-- onUpstreamChunk
-- afterUpstreamResponse
-- onFetchModelList
+项目实现了完整的 Hook 处理机制，支持在请求和响应的不同阶段对数据进行处理。支持的 Hook：
+
+- `beforeUpstreamRequest` - 上游请求前处理
+- `onUpstreamChunk` - 上游数据流处理
+- `afterUpstreamResponse` - 上游响应后处理
+- `onFetchModelList` - 模型列表获取处理
 
 ### 插件系统
 
@@ -209,19 +238,29 @@ export type PluginConfig = {
 };
 ```
 
-#### 插件加载机制 (`src/load-plugin.ts`)
+#### 控制器架构
 
-支持的运行时环境：
+- **AppConfigController**: 负责应用配置的加载和保存
+- **PluginConfigController**: 负责插件配置的批量管理
+- **PluginInstanceController**: 负责插件实例的加载、保存和删除
+
+#### 支持的运行时环境
+
 - Docker 环境
 - 本地开发环境
 
-支持的插件类型：
+#### 支持的插件类型
+
 - NPM 包插件
 - 本地 TypeScript/JavaScript 插件
 
 ### 缓存机制
 
-项目实现了插件缓存机制以提高性能。
+项目实现了插件缓存机制以提高性能：
+
+- 应用配置缓存
+- 插件配置缓存
+- 插件实例缓存
 
 ### 工具函数
 
@@ -239,33 +278,13 @@ export type PluginConfig = {
 
 定义 HTTP 响应代码常量。
 
-#### 配置加载 (`src/load-config.ts`)
+#### 流式处理工具 (`src/utils/stream-utils.ts`)
 
-加载和验证应用配置，支持多种运行时环境。
+提供流式响应处理功能，支持数据流转换和处理。
 
 #### TypeScript 编译工具 (`src/utils/compile.ts`)
 
 提供动态 TypeScript 编译功能，用于插件系统。
-
-```typescript
-export default async function compile(
-  tsFilePath: string
-): Promise<string | null> {
-  const sourceCode = await fs.readFile(tsFilePath, 'utf8');
-  const compilerOptions: ts.CompilerOptions = {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.NodeNext,
-    moduleResolution: ts.ModuleResolutionKind.NodeNext,
-  };
-  const result = ts.transpileModule(sourceCode, { compilerOptions });
-  const jsCode = result.outputText;
-  const jsFileName = `${path.basename(tsFilePath, '.ts')}.js`;
-  const tsDirPath = path.dirname(tsFilePath);
-  const compiledFilePath = path.join(tsDirPath, jsFileName);
-  await fs.writeFile(compiledFilePath, jsCode);
-  return compiledFilePath;
-}
-```
 
 #### 应用数据管理 (`src/utils/app-data.ts`)
 
@@ -276,25 +295,32 @@ export default async function compile(
 ### 路由系统
 
 前端使用 [@tanstack/react-router](https://tanstack.com/router) 实现声明式路由管理，目前包含以下页面路由：
+
 - `/` - Hooks 页面
+- `/plugins` - 插件管理页面
 - `/logs` - 日志页面
 - `/settings` - 设置页面
 
 ### 状态管理
 
 使用 [Zustand](https://github.com/pmndrs/zustand) 实现全局状态管理，包含：
+
+- Hook 配置状态管理
+- 插件状态管理
 - 主题状态管理（浅色、深色、系统主题）
 - 语言状态管理（中英文切换）
 
 ### 国际化
 
 前端支持中英文国际化，通过自定义翻译 Hook 实现：
+
 - 英语 (en)
 - 简体中文 (zh)
 
 ### 主题系统
 
 支持三种主题模式：
+
 - 浅色模式 (light)
 - 深色模式 (dark)
 - 系统模式 (system) - 跟随操作系统主题偏好
@@ -304,9 +330,17 @@ export default async function compile(
 #### 侧边栏导航
 
 实现了一个侧边栏导航组件，包含：
+
 - 页面导航链接
 - 主题切换图标按钮组（Sun、Moon、Monitor 图标）
 - 语言切换下拉框
+
+#### 插件管理界面
+
+- 插件列表显示和编辑
+- 拖拽排序支持
+- 元数据编辑器
+- 脚本编辑器
 
 ## 测试策略
 
@@ -350,12 +384,14 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 - 实现插件缓存策略以减少重复加载
 - 优化流式响应处理
 - 使用内存缓存提高插件加载性能
+- 异步插件安装避免阻塞事件循环
 
 ### 插件系统优化
 
 - 支持插件预编译和缓存
 - 按需加载插件依赖
 - 运行时环境适配优化
+- 批量配置操作提高效率
 
 ## 安全考虑
 
@@ -365,7 +401,9 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 
 ### 插件安全
 
-插件无法直接读取用户的 API Key，防止第三方插件窃取用户数据。
+- 插件无法直接读取用户的 API Key，防止第三方插件窃取用户数据
+- 异步依赖安装避免阻塞系统
+- 路径验证防止目录遍历攻击
 
 ## 监控和日志
 
@@ -401,8 +439,18 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 3. 查看编译错误日志
 4. 确保运行时环境支持插件编译
 
+### 问题 3: 如何管理插件配置？
+
+**解决方案**:
+1. 使用 `PluginConfigController` 管理插件配置
+2. 使用 `PluginInstanceController` 管理插件实例
+3. 通过 API 接口进行配置管理
+4. 支持批量操作和单个操作
+
 ## 参考资源
 
 - [Hono 官方文档](https://hono.dev/)
 - [Vercel AI SDK 文档](https://sdk.vercel.ai/docs)
 - [TypeScript 官方文档](https://www.typescriptlang.org/docs/)
+- [Drizzle ORM 文档](https://orm.drizzle.team/)
+- [live-plugin-manager 文档](https://github.com/sgenoni/live-plugin-manager)

@@ -8,5 +8,13 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [react(), tailwindcss()],
-  server: { port: 3000 },
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5126',
+        changeOrigin: true,
+      },
+    },
+  },
 });

@@ -2,10 +2,10 @@ import type { SSEStreamingApi } from 'hono/streaming';
 import type { Logger } from 'pino';
 import type { AppConfig, PluginConfig } from '../common/types/config.ts';
 import type { Plugin } from '../common/types/plugin.ts';
-import { loadPluginConfigs } from './config.ts';
-import { type LlmModel, llmClientFactory } from './llm-client-factory.ts';
-import { loadPlugin } from './plugin.ts';
+import pluginConfigController from './controllers/plugin-config.ts';
+import pluginInstanceController from './controllers/plugin-instance.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
+import { type LlmModel, llmClientFactory } from './utils/llm-client-factory.ts';
 import { logger } from './utils/logger.ts';
 import { responseStreamProcessor } from './utils/stream-utils.ts';
 
@@ -36,12 +36,12 @@ async function hookWrapper(
 ): Promise<void> {
   const assistantModel = assistantModelFactory(config);
   const pluginNames = config.plugins[hookName];
-  const pluginConfigs = await loadPluginConfigs(pluginNames);
+  const pluginConfigs = await pluginConfigController.loadBatch(pluginNames);
   for (const [pluginName, pluginConfig] of Object.entries(pluginConfigs)) {
     if (!pluginConfig.enabled) {
       continue;
     }
-    const plugin = await loadPlugin(pluginName);
+    const plugin = await pluginInstanceController.load(pluginName);
     if (plugin === null || !Object.hasOwn(plugin, hookName)) {
       continue;
     }
