@@ -1,9 +1,9 @@
 import type { SSEStreamingApi } from 'hono/streaming';
 import type { Logger } from 'pino';
 import type { AppConfig, PluginConfig } from '../common/types/config.ts';
-import type { Plugin } from '../common/types/plugin.ts';
 import pluginConfigController from './controllers/plugin-config.ts';
 import pluginInstanceController from './controllers/plugin-instance.ts';
+import type { Plugin } from './types/plugin.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
 import { type LlmModel, llmClientFactory } from './utils/llm-client-factory.ts';
 import { logger } from './utils/logger.ts';

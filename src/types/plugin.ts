@@ -1,5 +1,5 @@
 import type { Logger } from 'pino';
-import type { LlmModel } from '../../src/utils/llm-client-factory.ts';
+import type { LlmModel } from '../utils/llm-client-factory.ts';
 
 export type PluginArguments<T> = {
   data: T;

@@ -1,3 +1,5 @@
-import type { Plugin } from './plugin.ts';
-
-export type HookType = keyof Plugin;
+export type HookType =
+  | 'beforeUpstreamRequest'
+  | 'onUpstreamChunk'
+  | 'afterUpstreamResponse'
+  | 'onFetchModelList';
