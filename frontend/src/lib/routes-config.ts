@@ -18,11 +18,11 @@ export const getRouteConfig = (_language: Language): RouteConfig[] => {
       labelKey: 'plugins',
       icon: 'plugin',
     },
-    {
-      path: '/logs',
-      labelKey: 'logs',
-      icon: 'log',
-    },
+    // {
+    //   path: '/logs',
+    //   labelKey: 'logs',
+    //   icon: 'log',
+    // },
     {
       path: '/settings',
       labelKey: 'settings',
