@@ -1,5 +1,6 @@
 import { ChevronDown, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { AddPluginModal } from '../components/plugins/AddPluginModal';
 import { PluginListItem } from '../components/plugins/PluginListItem';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
@@ -34,9 +35,28 @@ export default function PluginsPage() {
   const enabledPlugins = plugins.filter((p) => p.enabled).length;
   const disabledPlugins = plugins.length - enabledPlugins;
 
-  // 模态框功能暂未实现
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const handleAddPlugin = () => {
-    // TODO: 实现添加插件功能
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddPluginConfirm = async (pluginData: {
+    name: string;
+    type: 'js' | 'ts' | 'npm' | 'unknown';
+    metadata: Record<string, string>;
+    content: string;
+  }) => {
+    try {
+      // TODO: 实现实际的后端 API 调用
+      // This will be implemented when backend API is ready
+      // pluginData contains: name, type, metadata, content
+
+      // 模拟添加成功，重新获取插件列表
+      await fetchPlugins();
+    } catch (_error) {
+      // TODO: 添加错误处理和用户提示
+    }
   };
 
   const handleEditPlugin = (_plugin: Plugin) => {
@@ -126,6 +146,14 @@ export default function PluginsPage() {
           </div>
         )}
       </div>
+
+      {/* Add Plugin Modal */}
+      <AddPluginModal
+        isOpen={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        onAddPlugin={handleAddPluginConfirm}
+        existingPluginNames={plugins.map((p) => p.name)}
+      />
     </div>
   );
 }
