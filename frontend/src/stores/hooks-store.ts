@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import type { HookType } from '../../../common/types/hook';
-import type { HooksData, HooksState } from '../types/hooks';
+import { hooksApi } from '../api/hooks';
+
+type HooksState = {
+  hooks: Record<HookType, string[]>;
+  pluginStates: Record<string, boolean>;
+};
 
 const initialHooksState: HooksState = {
   hooks: {
@@ -16,7 +21,6 @@ type HooksActions = {
   hasChanges: boolean;
   isSaving: boolean;
   isLoading: boolean;
-  loadingError: string | null;
   updateHookOrder: (hookType: HookType, newOrder: string[]) => void;
 
   fetchHooks: () => Promise<void>;
@@ -28,7 +32,6 @@ export const useHooksStore = create<HooksState & HooksActions>((set, get) => ({
   hasChanges: false,
   isSaving: false,
   isLoading: false,
-  loadingError: null,
 
   updateHookOrder: (hookType, newOrder) => {
     set((state) => ({
@@ -41,45 +44,30 @@ export const useHooksStore = create<HooksState & HooksActions>((set, get) => ({
   },
 
   fetchHooks: async () => {
-    set({ isLoading: true, loadingError: null });
-    try {
-      const response = await fetch('/api/hooks');
-      if (!response.ok) {
-        throw new Error('Failed to fetch hooks configuration');
-      }
-      const data = await response.json();
+    set({ isLoading: true });
+    const data = await hooksApi.getHooks();
 
-      if (!data) {
-        set({
-          hooks: initialHooksState.hooks,
-          pluginStates: initialHooksState.pluginStates,
-          isLoading: false,
-        });
-        return;
-      }
-
-      const { pluginOrder, pluginConfigs } = data as HooksData;
-      const pluginStates: Record<string, boolean> = {};
-      for (const [pluginName, pluginConfig] of Object.entries(pluginConfigs)) {
-        pluginStates[pluginName] = pluginConfig.enabled;
-      }
-
+    if (!data) {
       set({
-        hooks: pluginOrder,
-        pluginStates,
-        isLoading: false,
-        hasChanges: false,
-        loadingError: null,
-      });
-    } catch (error) {
-      set({
-        isLoading: false,
-        loadingError:
-          error instanceof Error ? error.message : 'Unknown error occurred',
         hooks: initialHooksState.hooks,
         pluginStates: initialHooksState.pluginStates,
+        isLoading: false,
       });
+      return;
     }
+
+    const { pluginOrder, pluginConfigs } = data;
+    const pluginStates: Record<string, boolean> = Object.create(null);
+    for (const [pluginName, pluginConfig] of Object.entries(pluginConfigs)) {
+      pluginStates[pluginName] = pluginConfig.enabled;
+    }
+
+    set({
+      hooks: pluginOrder,
+      pluginStates,
+      isLoading: false,
+      hasChanges: false,
+    });
   },
 
   saveChanges: async () => {
@@ -88,33 +76,12 @@ export const useHooksStore = create<HooksState & HooksActions>((set, get) => ({
       return;
     }
 
-    set({ isSaving: true, loadingError: null });
-    try {
-      const response = await fetch('/api/hooks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pluginOrder: state.hooks,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save hooks configuration');
-      }
-      set({
-        isSaving: false,
-        hasChanges: false,
-        loadingError: null,
-      });
-      await get().fetchHooks();
-    } catch (error) {
-      set({
-        isSaving: false,
-        loadingError:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-      });
-    }
+    set({ isSaving: true });
+    await hooksApi.updateHooks(state.hooks);
+    set({
+      isSaving: false,
+      hasChanges: false,
+    });
+    await get().fetchHooks();
   },
 }));

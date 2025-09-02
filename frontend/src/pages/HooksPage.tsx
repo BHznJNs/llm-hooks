@@ -1,4 +1,4 @@
-import { AlertCircle, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useEffect } from 'react';
 import type { HookType } from '../../../common/types/hook';
 import { HookCollapse } from '../components/hooks/HookCollapse';
@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { useTranslation } from '../lib/i18n';
 import { useHooksStore } from '../stores/hooks-store';
 import { useLanguageStore } from '../stores/language-store';
+import { useToastStore } from '../stores/toast-store';
 
 const HOOK_TYPES: HookType[] = [
   'beforeUpstreamRequest',
@@ -17,18 +18,21 @@ const HOOK_TYPES: HookType[] = [
 export default function HooksPage() {
   const { language } = useLanguageStore();
   const { t } = useTranslation(language);
-  const {
-    hasChanges,
-    isSaving,
-    isLoading,
-    loadingError,
-    saveChanges,
-    fetchHooks,
-  } = useHooksStore();
+  const { showToast } = useToastStore();
+  const { hasChanges, isSaving, isLoading, saveChanges, fetchHooks } =
+    useHooksStore();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onmounted data fetch
   useEffect(() => {
-    fetchHooks();
-  }, [fetchHooks]);
+    fetchHooks().catch((error) => {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : 'Failed to load hooks configuration',
+        'error'
+      );
+    });
+  }, [fetchHooks, showToast]);
 
   return (
     <div className="flex h-full flex-col">
@@ -38,19 +42,22 @@ export default function HooksPage() {
             <p className="mt-2 text-gray-600 dark:text-gray-300">
               {t('hooks-description')}
             </p>
-            {loadingError && (
-              <div className="mt-2 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                <AlertCircle size={16} />
-                <span className="text-sm">{loadingError}</span>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
             <Button
               size="medium"
               variant="primary"
-              onClick={saveChanges}
+              onClick={() => {
+                saveChanges().catch((error) => {
+                  showToast(
+                    error instanceof Error
+                      ? error.message
+                      : 'Failed to save hooks configuration',
+                    'error'
+                  );
+                });
+              }}
               disabled={!hasChanges || isSaving || isLoading}
             >
               <Save size={16} className={isSaving ? 'animate-spin' : ''} />
