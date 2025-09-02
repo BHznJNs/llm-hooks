@@ -2,6 +2,7 @@ import { AlertCircle, Save } from 'lucide-react';
 import { useEffect } from 'react';
 import type { HookType } from '../../../common/types/hook';
 import { HookCollapse } from '../components/hooks/HookCollapse';
+import { Button } from '../components/ui/Button';
 import { useTranslation } from '../lib/i18n';
 import { useHooksStore } from '../stores/hooks-store';
 import { useLanguageStore } from '../stores/language-store';
@@ -46,20 +47,15 @@ export default function HooksPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              size="medium"
+              variant="primary"
               onClick={saveChanges}
               disabled={!hasChanges || isSaving || isLoading}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
-                !hasChanges || isSaving || isLoading
-                  ? 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
-                  : 'cursor-pointer bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg'
-              }
-              `}
             >
               <Save size={16} className={isSaving ? 'animate-spin' : ''} />
               {isSaving ? t('saving') : t('save-changes')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

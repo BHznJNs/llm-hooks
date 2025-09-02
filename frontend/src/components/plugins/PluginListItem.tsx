@@ -1,4 +1,5 @@
 import { FilePenLine, Power, Trash2 } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import type { Plugin } from '../../types/plugin';
@@ -36,31 +37,34 @@ export function PluginListItem({
         </div>
       </div>
       <div className="flex items-baseline gap-2">
-        <button
-          type="button"
+        <Button
+          size="small"
+          variant="tertiary"
           onClick={() => onToggle(plugin.name)}
-          className={`cursor-pointer rounded-md p-2 transition-all duration-200 ${
+          className={`${
             plugin.enabled
               ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
               : 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800'
           }`}
         >
           <Power className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          size="small"
+          variant="tertiary"
           onClick={() => onEdit(plugin)}
-          className="cursor-pointer rounded-md bg-blue-100 p-2 text-blue-600 transition-all duration-200 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+          className="bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
         >
           <FilePenLine className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          size="small"
+          variant="tertiary"
           onClick={() => onDelete(plugin.name)}
-          className="cursor-pointer rounded-md bg-red-100 p-2 text-red-600 transition-all duration-200 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+          className="bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );

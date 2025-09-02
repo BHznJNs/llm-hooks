@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { FormField } from '../components/settings/FormField';
 import { PasswordField } from '../components/settings/PasswordField';
 import { ProviderSelect } from '../components/settings/ProviderSelect';
+import { Button } from '../components/ui/Button';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { useSettingsStore } from '../stores/settings-store';
@@ -101,8 +102,9 @@ export default function SettingsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>{/* Empty element */}</div>
           <div className="flex gap-3">
-            <button
-              type="button"
+            <Button
+              size="medium"
+              variant="primary"
               onClick={async () => {
                 if (!validateForm()) {
                   return;
@@ -118,15 +120,10 @@ export default function SettingsPage() {
                 }
               }}
               disabled={!hasChanges || isSaving}
-              className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-medium transition-all ${
-                hasChanges && !isSaving
-                  ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg'
-                  : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
-              }`}
             >
               <Save size={16} />
               {isSaving ? t('saving') : t('save-settings')}
-            </button>
+            </Button>
           </div>
         </div>
 

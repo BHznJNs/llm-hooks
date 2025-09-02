@@ -1,5 +1,6 @@
 import { Check, Edit3, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { Button } from '../../components/ui/Button';
 import { useTranslation } from '../../lib/i18n';
 
 type MetadataEditorProps = {
@@ -125,15 +126,15 @@ export function MetadataEditor({ metadata, onChange }: MetadataEditorProps) {
           onChange={(e) => setNewValue(e.target.value)}
           className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
         />
-        <button
-          type="button"
+        <Button
+          size="small"
+          variant="tertiary"
           onClick={addEntry}
           disabled={!(newKey.trim() && newValue.trim())}
-          className="flex items-center justify-center rounded bg-blue-600 p-2 text-sm text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-gray-600 dark:focus:ring-blue-600"
           aria-label={t('add-metadata-pair')}
         >
           <Plus size={16} />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -183,20 +184,12 @@ function MetadataEntryRow({
           onChange={(e) => setEditValue(e.target.value)}
           className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
         />
-        <button
-          type="button"
-          onClick={handleSave}
-          className="cursor-pointer rounded bg-green-600 px-3 py-2 font-medium text-sm text-white shadow-sm transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-green-600"
-        >
+        <Button size="small" variant="primary" onClick={handleSave}>
           <Check />
-        </button>
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="cursor-pointer rounded bg-gray-500 px-3 py-2 font-medium text-sm text-white shadow-sm transition-colors hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 dark:focus:ring-gray-600 dark:hover:bg-gray-700"
-        >
+        </Button>
+        <Button size="small" variant="secondary" onClick={handleCancel}>
           <X />
-        </button>
+        </Button>
       </div>
     );
   }
@@ -209,22 +202,22 @@ function MetadataEntryRow({
         </span>{' '}
         <span className="text-gray-600 dark:text-gray-400">{entry.value}</span>
       </div>
-      <button
-        type="button"
+      <Button
+        size="small"
+        variant="tertiary"
         onClick={() => onEdit(entry.id)}
-        className="flex cursor-pointer items-center justify-center rounded p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
         aria-label={t('edit-metadata')}
       >
         <Edit3 size={16} />
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        size="small"
+        variant="tertiary"
         onClick={() => onRemove(entry.id)}
-        className="flex cursor-pointer items-center justify-center rounded p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 dark:focus:ring-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
         aria-label={t('remove-metadata')}
       >
         <Trash2 size={16} />
-      </button>
+      </Button>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { ChevronDown, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AddPluginModal } from '../components/plugins/AddPluginModal';
 import { PluginListItem } from '../components/plugins/PluginListItem';
+import { Button } from '../components/ui/Button';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { usePluginsStore } from '../stores/plugins-store';
@@ -71,8 +72,8 @@ export default function PluginsPage() {
     <div className="min-h-screen bg-gray-50 px-10 py-6 dark:bg-gray-900">
       <header className="mb-6">
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-8 rounded-lg border border-gray-200 bg-white px-6 py-4 shadow-custom dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex items-baseline gap-3 border-gray-200 border-r pr-8 dark:border-gray-600">
+          <div className="flex items-center gap-6 rounded-lg border border-gray-200 bg-white px-5 py-3 shadow-custom dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex items-baseline gap-3">
               <p className="font-bold text-gray-900 dark:text-white">
                 {t('enabled')}
               </p>
@@ -80,6 +81,7 @@ export default function PluginsPage() {
                 {enabledPlugins}
               </span>
             </div>
+            <div className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-baseline gap-3">
               <p className="font-bold text-gray-900 dark:text-white">
                 {t('disabled')}
@@ -89,14 +91,10 @@ export default function PluginsPage() {
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleAddPlugin}
-            className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
-          >
+          <Button size="medium" variant="primary" onClick={handleAddPlugin}>
             <Plus size={16} />
             <span>{t('add-plugin')}</span>
-          </button>
+          </Button>
         </div>
       </header>
 
