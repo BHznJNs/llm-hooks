@@ -1,4 +1,4 @@
-import { Edit3, Plus, Trash2 } from 'lucide-react';
+import { Check, Edit3, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from '../../lib/i18n';
 
@@ -188,14 +188,14 @@ function MetadataEntryRow({
           onClick={handleSave}
           className="cursor-pointer rounded bg-green-600 px-3 py-2 font-medium text-sm text-white shadow-sm transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-green-600"
         >
-          {t('save')}
+          <Check />
         </button>
         <button
           type="button"
           onClick={handleCancel}
           className="cursor-pointer rounded bg-gray-500 px-3 py-2 font-medium text-sm text-white shadow-sm transition-colors hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 dark:focus:ring-gray-600 dark:hover:bg-gray-700"
         >
-          {t('cancel')}
+          <X />
         </button>
       </div>
     );

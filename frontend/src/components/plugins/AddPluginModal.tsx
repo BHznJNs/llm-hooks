@@ -273,7 +273,7 @@ export function AddPluginModal({
               className="rounded-md bg-blue-600 px-6 py-2 font-semibold text-white shadow-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               onClick={handleAddClick}
             >
-              {t('add-plugin')}
+              {t('confirm')}
             </button>
           </div>
         </DialogContent>
