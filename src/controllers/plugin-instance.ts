@@ -1,14 +1,11 @@
-import childProcess from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { PluginManager } from 'live-plugin-manager';
-import { pluginScripts } from '../db/schema.ts';
 import type { Plugin } from '../types/plugin.ts';
-import compile from '../utils/compile.ts';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 import pluginConfigController from './plugin-config.ts';
+import scriptController from './script.ts';
 
 const pluginManager = await (async () => {
   switch (runtime) {
@@ -52,63 +49,7 @@ async function loadNpmPlugin(npmPackageName: string): Promise<Plugin | null> {
   }
 }
 
-async function loadScriptPlugin(scriptPath: string): Promise<Plugin | null> {
-  let compiledFilePath: string | null = null;
-  if (scriptPath.endsWith('.ts')) {
-    compiledFilePath = await compile(scriptPath);
-    if (!compiledFilePath) {
-      return null;
-    }
-  }
-  const targetPluginModulePath = scriptPath.endsWith('.ts')
-    ? compiledFilePath!
-    : scriptPath;
-  const module = await import(pathToFileURL(targetPluginModulePath).href);
-  return module.default;
-}
-
 // --- --- --- --- --- ---
-
-async function installPluginScript(
-  name: string,
-  content: string,
-  dependencies: string[]
-): Promise<void> {
-  const packageJsonPath = path.join(scriptPluginDirectory, 'package.json');
-  const scriptPluginPath = path.join(scriptPluginDirectory, name);
-  await fs.mkdir(scriptPluginDirectory, { recursive: true });
-  try {
-    await fs.access(packageJsonPath, fs.constants.R_OK);
-  } catch {
-    // create package.json if not exist
-    await fs.writeFile(packageJsonPath, '{"type": "module"}');
-  }
-  await fs.writeFile(scriptPluginPath, content);
-  return new Promise((resolve, reject) => {
-    const npmExecTimeout = 20_000;
-    setTimeout(
-      () => reject(new Error('Timeout waiting for npm install')),
-      npmExecTimeout
-    );
-    childProcess.exec(
-      `npm install --silent ${dependencies.join(' ')}`,
-      {
-        cwd: scriptPluginDirectory,
-      },
-      (error, _stdout, stderr) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        if (stderr) {
-          reject(new Error(stderr));
-          return;
-        }
-        resolve();
-      }
-    );
-  });
-}
 
 class PluginInstanceController {
   private readonly logger = logger.moduleLogger('plugin-instance');
@@ -131,13 +72,13 @@ class PluginInstanceController {
         return null;
       }
       const pluginConfig = pluginConfigMap[name];
-      await installPluginScript(
+      await scriptController.install(
         name,
         pluginScriptContent,
         pluginConfig.dependencies
       );
     }
-    return await loadScriptPlugin(pluginModulePath);
+    return await scriptController.load(name);
   }
 
   private async loadForLocal(name: string): Promise<Plugin | null> {
@@ -152,7 +93,7 @@ class PluginInstanceController {
       this.logger.error(`Plugin not found: ${name}`);
       return null;
     }
-    return await loadScriptPlugin(pluginModulePath);
+    return await scriptController.load(name);
   }
 
   private async saveForDocker(
@@ -165,7 +106,7 @@ class PluginInstanceController {
     } else {
       const { default: dbOperator } = await import('../db/operator.ts');
       await Promise.all([
-        installPluginScript(name, content!, dependencies!),
+        scriptController.install(name, content!, dependencies!),
         dbOperator.saveScript(name, content!),
       ]);
     }
@@ -179,8 +120,28 @@ class PluginInstanceController {
     if (isPluginAnNpmPackage(name)) {
       await pluginManager.install(name);
     } else {
-      await installPluginScript(name, content!, dependencies!);
+      await scriptController.install(name, content!, dependencies!);
     }
+  }
+
+  async loadContent(name: string): Promise<string | null> {
+    if (isPluginAnNpmPackage(name)) {
+      return null;
+    }
+    const pluginModulePath = path.join(scriptPluginDirectory, name);
+    try {
+      await fs.access(pluginModulePath, fs.constants.R_OK);
+    } catch {
+      if (runtime !== 'docker') {
+        return null;
+      }
+      const { default: dbOperator } = await import('../db/operator.ts');
+      const pluginScriptContent = await dbOperator.fetchScript(name);
+      if (pluginScriptContent) {
+        await fs.writeFile(pluginModulePath, pluginScriptContent);
+      }
+    }
+    return await fs.readFile(pluginModulePath, 'utf8');
   }
 
   async load(name: string): Promise<Plugin | null> {

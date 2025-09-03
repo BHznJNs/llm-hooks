@@ -1,12 +1,11 @@
 import { eq, inArray } from 'drizzle-orm';
 import type { AppConfig, PluginConfig } from '../../common/types/config.ts';
-import { logger } from '../utils/logger.ts';
 import { type Database, db } from './index.ts';
 import { appConfigs, pluginConfigs, pluginScripts } from './schema.ts';
 
 class DatabaseOperator {
   private readonly db: Database;
-  private readonly _logger = logger.moduleLogger('database-operator');
+  // private readonly logger = logger.moduleLogger('database-operator');
 
   constructor(db_: Database) {
     this.db = db_;

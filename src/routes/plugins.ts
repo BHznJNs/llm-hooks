@@ -18,6 +18,12 @@ plugins.get('/', async (c: Context) => {
   return c.json({ plugins: plugins_ });
 });
 
+plugins.get('/content/:plugin_name', async (c: Context) => {
+  const pluginName = c.req.param('plugin_name');
+  const pluginContent = await pluginInstanceController.load(pluginName);
+  return c.json({ content: pluginContent });
+});
+
 plugins.post('/', async (c: Context) => {
   const { name, params, dependencies, content } = await c.req.json<{
     name: string;
