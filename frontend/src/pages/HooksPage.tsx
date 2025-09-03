@@ -32,7 +32,7 @@ export default function HooksPage() {
         'error'
       );
     });
-  }, [fetchHooks, showToast]);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">

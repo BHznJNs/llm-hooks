@@ -34,18 +34,11 @@ class PluginConfigController {
   private async loadForDocker(
     pluginNames: string[]
   ): Promise<Record<string, PluginConfig>> {
-    const { inArray } = await import('drizzle-orm');
-    const { db } = await import('../db/index.ts');
-    const { pluginConfigs } = await import('../db/schema.ts');
-    const rows = await db
-      .select({
-        name: pluginConfigs.name,
-        enabled: pluginConfigs.enabled,
-        dependencies: pluginConfigs.dependencies,
-        params: pluginConfigs.params,
-      } as const)
-      .from(pluginConfigs)
-      .where(inArray(pluginConfigs.name, pluginNames));
+    if (pluginNames.length === 0) {
+      return {};
+    }
+    const { default: dbOperator } = await import('../db/operator.ts');
+    const rows = await dbOperator.fetchPluginConfigBatch(pluginNames);
     const result: Record<string, PluginConfig> = {};
     for (const row of rows) {
       result[row.name] = {
@@ -60,26 +53,8 @@ class PluginConfigController {
   private async saveForDocker(
     pluginConfigs: Record<string, PluginConfig>
   ): Promise<void> {
-    const { sql } = await import('drizzle-orm');
-    const { db } = await import('../db/index.ts');
-    const { pluginConfigs: pluginConfigsTable } = await import(
-      '../db/schema.ts'
-    );
-    const dataToSave = Object.entries(pluginConfigs).map(([name, config]) => ({
-      name,
-      ...config,
-    }));
-    await db
-      .insert(pluginConfigsTable)
-      .values(dataToSave)
-      .onConflictDoUpdate({
-        target: pluginConfigsTable.name,
-        set: {
-          enabled: sql`excluded.enabled`,
-          dependencies: sql`excluded.dependencies`,
-          params: sql`excluded.params`,
-        },
-      });
+    const { default: dbOperator } = await import('../db/operator.ts');
+    await dbOperator.savePluginConfigBatch(pluginConfigs);
   }
 
   private async saveForLocal(
@@ -112,10 +87,8 @@ class PluginConfigController {
   }
 
   private async deleteForDocker(pluginName: string): Promise<void> {
-    const { eq } = await import('drizzle-orm');
-    const { db } = await import('../db/index.ts');
-    const { pluginConfigs } = await import('../db/schema.ts');
-    await db.delete(pluginConfigs).where(eq(pluginConfigs.name, pluginName));
+    const { default: dbOperator } = await import('../db/operator.ts');
+    await dbOperator.deletePluginConfig(pluginName);
   }
 
   async loadBatch(

@@ -109,4 +109,5 @@ class DatabaseController {
 
 const dbController = new DatabaseController(envConnectionString);
 await dbController.initialize();
+export type Database = typeof dbController.db;
 export const db = dbController.db;

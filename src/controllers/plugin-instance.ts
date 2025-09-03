@@ -34,7 +34,7 @@ const scriptPluginDirectory = await (async () => {
   }
 })();
 
-function isPluginAnNpmPackage(name: string): boolean {
+export function isPluginAnNpmPackage(name: string): boolean {
   return !name.includes('.');
 }
 
@@ -65,29 +65,6 @@ async function loadScriptPlugin(scriptPath: string): Promise<Plugin | null> {
     : scriptPath;
   const module = await import(pathToFileURL(targetPluginModulePath).href);
   return module.default;
-}
-
-async function fetchPluginScriptFromDatabase(
-  pluginName: string
-): Promise<string | null> {
-  if (runtime !== 'docker') {
-    throw new Error(
-      `Method not supported for runtime "${runtime}": "fetchPluginScriptFromDatabase"`
-    );
-  }
-
-  const { db } = await import('../db/index.ts');
-  const { eq } = await import('drizzle-orm');
-  const result = await db
-    .select({ content: pluginScripts.content })
-    .from(pluginScripts)
-    .where(eq(pluginScripts.id, pluginName))
-    .limit(1);
-
-  if (!result[0]?.content) {
-    return null;
-  }
-  return result[0].content;
 }
 
 // --- --- --- --- --- ---
@@ -133,22 +110,6 @@ async function installPluginScript(
   });
 }
 
-async function savePluginScriptIntoDatabase(
-  name: string,
-  content: string
-): Promise<void> {
-  if (runtime !== 'docker') {
-    throw new Error(
-      `Method not supported for runtime "${runtime}": "savePluginScriptIntoDatabase"`
-    );
-  }
-  const { db } = await import('../db/index.ts');
-  await db
-    .insert(pluginScripts)
-    .values({ id: name, content })
-    .onConflictDoUpdate({ target: pluginScripts.id, set: { content } });
-}
-
 class PluginInstanceController {
   private readonly logger = logger.moduleLogger('plugin-instance');
   private readonly cache = new Map<string, Plugin>();
@@ -157,12 +118,13 @@ class PluginInstanceController {
     if (isPluginAnNpmPackage(name)) {
       return await loadNpmPlugin(name);
     }
+    const { default: dbOperator } = await import('../db/operator.ts');
     const pluginModulePath = path.join(scriptPluginDirectory, name);
     try {
       await fs.access(pluginModulePath, fs.constants.R_OK);
     } catch {
       const [pluginScriptContent, pluginConfigMap] = await Promise.all([
-        fetchPluginScriptFromDatabase(name),
+        dbOperator.fetchScript(name),
         pluginConfigController.loadBatch([name]),
       ]);
       if (!pluginScriptContent || pluginConfigMap[name] === undefined) {
@@ -201,9 +163,10 @@ class PluginInstanceController {
     if (isPluginAnNpmPackage(name)) {
       await pluginManager.install(name);
     } else {
+      const { default: dbOperator } = await import('../db/operator.ts');
       await Promise.all([
         installPluginScript(name, content!, dependencies!),
-        savePluginScriptIntoDatabase(name, content!),
+        dbOperator.saveScript(name, content!),
       ]);
     }
   }

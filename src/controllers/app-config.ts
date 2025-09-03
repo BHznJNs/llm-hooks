@@ -31,32 +31,12 @@ class AppConfigController {
   private readonly logger = logger.moduleLogger('app-config');
 
   private async loadForDocker(): Promise<AppConfig | null> {
-    const { db } = await import('../db/index.ts');
-    const { appConfigs } = await import('../db/schema.ts');
-
-    try {
-      // only inserts default config when there is no existing config
-      await db
-        .insert(appConfigs)
-        .values({ id: 1, ...DEFAULT_CONFIG })
-        .onConflictDoNothing({ target: appConfigs.id });
-
-      const result = await db
-        .select({
-          upstream: appConfigs.upstream,
-          assistant: appConfigs.assistant,
-          plugins: appConfigs.plugins,
-        } as const)
-        .from(appConfigs)
-        .limit(1);
-      if (result.length === 0) {
-        throw new Error('Failed to load or create app configuration');
-      }
-      return result[0] as AppConfig;
-    } catch (error) {
-      this.logger.error(error);
-      return null;
+    const { default: dbOperator } = await import('../db/operator.ts');
+    const result = await dbOperator.fetchAppConfig();
+    if (result === null) {
+      throw new Error('Failed to load or create app configuration');
     }
+    return result;
   }
 
   private async loadForLocal(): Promise<AppConfig | null> {
@@ -78,10 +58,8 @@ class AppConfigController {
   }
 
   private async saveForDocker(config: AppConfig): Promise<void> {
-    const { eq } = await import('drizzle-orm');
-    const { db } = await import('../db/index.ts');
-    const { appConfigs } = await import('../db/schema.ts');
-    await db.update(appConfigs).set(config).where(eq(appConfigs.id, 1));
+    const { default: dbOperator } = await import('../db/operator.ts');
+    await dbOperator.saveAppConfig(config);
   }
 
   private async saveForLocal(config: AppConfig): Promise<void> {
