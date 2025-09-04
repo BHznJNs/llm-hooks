@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { useTranslation } from '../../lib/i18n';
 
 type MetadataEditorProps = {
-  metadata: Record<string, string>;
+  metadata: Record<string, unknown>;
   onChange: (metadata: Record<string, string>) => void;
 };
 
@@ -20,7 +20,7 @@ export function MetadataEditor({ metadata, onChange }: MetadataEditorProps) {
   const [entries, setEntries] = useState<MetadataEntry[]>(() =>
     Object.entries(metadata).map(([key, value], index) => ({
       key,
-      value,
+      value: String(value),
       id: `${index}`,
       isEditing: false,
     }))

@@ -4,6 +4,11 @@ import type { PluginConfig } from '../../common/types/config.ts';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 
+const configPathFactory = async (name: string) => {
+  const { default: appData } = await import('../utils/app-data.ts');
+  return path.join(appData, 'plugins', `${name}.config.json`);
+};
+
 class PluginConfigController {
   private readonly logger = logger.moduleLogger('plugin-config');
   private readonly cache = new Map<string, PluginConfig>();
@@ -11,14 +16,9 @@ class PluginConfigController {
   private async loadForLocal(
     pluginNames: string[]
   ): Promise<Record<string, PluginConfig>> {
-    const { default: appData } = await import('../utils/app-data.ts');
     const readTasks: Promise<PluginConfig>[] = [];
     for (const pluginName of pluginNames) {
-      const configPath = path.join(
-        appData,
-        'plugins',
-        `${pluginName}.config.json`
-      );
+      const configPath = await configPathFactory(pluginName);
       readTasks.push(fs.readFile(configPath, 'utf8').then(JSON.parse));
     }
     const results = await Promise.allSettled(readTasks);
@@ -64,7 +64,7 @@ class PluginConfigController {
     const writeTasks: Promise<void>[] = [];
     await fs.mkdir(path.join(appData, 'plugins'), { recursive: true });
     for (const [name, config] of Object.entries(pluginConfigs)) {
-      const configPath = path.join(appData, 'plugins', `${name}.config.json`);
+      const configPath = await configPathFactory(name);
       writeTasks.push(
         fs.writeFile(configPath, JSON.stringify(config)).catch((error) => {
           this.logger.warn(`Save config failed: ${error}`);
@@ -74,13 +74,23 @@ class PluginConfigController {
     await Promise.allSettled(writeTasks);
   }
 
+  private async hasForDocker(pluginName: string): Promise<boolean> {
+    const { default: dbOperator } = await import('../db/operator.ts');
+    return (await dbOperator.fetchPluginConfigBatch([pluginName])).length > 0;
+  }
+
+  private async hasForLocal(pluginName: string): Promise<boolean> {
+    const configPath = await configPathFactory(pluginName);
+    try {
+      await fs.access(configPath, fs.constants.R_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async deleteForLocal(pluginName: string): Promise<void> {
-    const { default: appData } = await import('../utils/app-data.ts');
-    const configPath = path.join(
-      appData,
-      'plugins',
-      `${pluginName}.config.json`
-    );
+    const configPath = await configPathFactory(pluginName);
     await fs.unlink(configPath).catch((error) => {
       this.logger.warn(`Delete config failed: ${error}`);
     });
@@ -141,6 +151,20 @@ class PluginConfigController {
     }
     for (const [name, config] of Object.entries(pluginConfigs)) {
       this.cache.set(name, config);
+    }
+  }
+
+  async has(name: string): Promise<boolean> {
+    if (this.cache.has(name)) {
+      return true;
+    }
+    switch (runtime) {
+      case 'docker':
+        return await this.hasForDocker(name);
+      case 'local':
+        return await this.hasForLocal(name);
+      default:
+        throw new Error(`Unsupported runtime: ${runtime}`);
     }
   }
 

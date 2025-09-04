@@ -3,8 +3,10 @@ import type { HookType } from '../../common/types/hook.ts';
 import appConfigController from '../controllers/app-config.ts';
 import pluginConfigController from '../controllers/plugin-config.ts';
 import pluginInstanceController from '../controllers/plugin-instance.ts';
+import { logger } from '../utils/logger.ts';
 
 const plugins = new Hono();
+const moduleLogger = logger.moduleLogger('plugins');
 
 plugins.get('/', async (c: Context) => {
   const appConfig = await appConfigController.load();
@@ -18,9 +20,19 @@ plugins.get('/', async (c: Context) => {
   return c.json({ plugins: plugins_ });
 });
 
+plugins.get('/has/:plugin_name', async (c: Context) => {
+  const pluginName = c.req.param('plugin_name');
+  const has = await pluginConfigController.has(pluginName);
+  return c.json({ has });
+});
+
 plugins.get('/content/:plugin_name', async (c: Context) => {
   const pluginName = c.req.param('plugin_name');
-  const pluginContent = await pluginInstanceController.load(pluginName);
+  const pluginContent = await pluginInstanceController.loadContent(pluginName);
+  if (!pluginContent) {
+    throw new Error('Failed to load plugin content');
+  }
+  moduleLogger.info(`Loaded plugin content: ${pluginName}`);
   return c.json({ content: pluginContent });
 });
 
@@ -31,6 +43,7 @@ plugins.post('/', async (c: Context) => {
     dependencies: string[];
     content?: string;
   }>();
+  moduleLogger.info(`Creating plugin: ${name}`);
   try {
     await Promise.all([
       pluginConfigController.saveBatch({
@@ -51,8 +64,8 @@ plugins.post('/', async (c: Context) => {
   }
 
   const pluginOrderData = appConfig.value!.plugins;
-  for (const hookName of Object.keys(plugin) as HookType[]) {
-    if (name in pluginOrderData[hookName]) {
+  for (const hookName of Object.keys(plugin.value!) as HookType[]) {
+    if (pluginOrderData[hookName].includes(name)) {
       continue;
     }
     pluginOrderData[hookName].push(name);
@@ -61,15 +74,23 @@ plugins.post('/', async (c: Context) => {
   return c.json(null);
 });
 
+plugins.put('/toggle/:plugin_name', async (c: Context) => {
+  const pluginName = c.req.param('plugin_name');
+  const enabled = c.req.query('enabled') === 'true';
+  await pluginConfigController.update(pluginName, { enabled });
+  return c.json(null);
+});
+
 plugins.put('/', async (c: Context) => {
-  const { name, params, dependencies, content } = await c.req.json<{
+  const { name, enabled, params, dependencies, content } = await c.req.json<{
     name: string;
+    enabled: boolean;
     params: Record<string, unknown>;
     dependencies: string[];
     content?: string;
   }>();
   await Promise.all([
-    pluginConfigController.update(name, { params, dependencies }),
+    pluginConfigController.update(name, { enabled, params, dependencies }),
     pluginInstanceController.save(name, dependencies, content),
   ]);
   return c.json(null);

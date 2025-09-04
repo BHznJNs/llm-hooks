@@ -3,15 +3,23 @@ import {
   editor as MonacoEditor,
   type languages as MonacoLanguages,
 } from 'monaco-editor';
-import { useEffect, useRef } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import { useThemeStore } from '../../stores/theme-store';
 
+export type ScriptEditorHandle = {
+  getValue: () => string | undefined;
+  setValue: (value: string) => void;
+};
 type ScriptEditorProps = {
   scriptType: 'javascript' | 'typescript';
-  initialContent: string;
-  onChange: (value: string | undefined) => void;
 };
 
 const PLUGIN_TYPE_DEF = `\
@@ -77,85 +85,95 @@ export default {
     
 } satisfies Plugin`;
 
-export function ScriptEditor({
-  scriptType,
-  initialContent,
-  onChange,
-}: ScriptEditorProps) {
-  const { language } = useLanguageStore();
-  const { t } = useTranslation(language);
-  const { theme } = useThemeStore();
-  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor>(null);
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
-  }, [theme]);
-
-  function getDefaultContent(type: 'javascript' | 'typescript') {
-    return type === 'javascript'
-      ? DEFAULT_JAVASCRIPT_PLUGIN_CONTENT
-      : DEFAULT_TYPESCRIPT_PLUGIN_CONTENT;
-  }
-
-  function handleEditorBeforeMount(monaco: {
-    languages: typeof MonacoLanguages;
-  }) {
-    const jsDocToTypeHintId = 80_004;
-    monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
-    monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(
-      PLUGIN_TYPE_DEF,
-      'file:///node_modules/plugin/index.d.ts'
+export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
+  ({ scriptType }, ref) => {
+    const { language } = useLanguageStore();
+    const { t } = useTranslation(language);
+    const { theme } = useThemeStore();
+    const [editorInitialValue, setEditorInitialValue] = useState(
+      getDefaultContent(scriptType)
     );
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      PLUGIN_TYPE_DEF,
-      'file:///node_modules/plugin/index.d.ts'
-    );
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ES2020,
-      allowNonTsExtensions: true,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs, // ← 解决 2792
-      allowSyntheticDefaultImports: true,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      noEmit: true,
-      checkJs: true,
-      allowJs: true,
-      esModuleInterop: true,
-      strict: true,
-    });
-    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
-      noSyntaxValidation: false,
-      diagnosticCodesToIgnore: [jsDocToTypeHintId],
-    });
-  }
+    const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor>(null);
+    const editorContainerRef = useRef<HTMLDivElement>(null);
 
-  function handleEditorDidMount(editor: MonacoEditor.IStandaloneCodeEditor) {
-    editorRef.current = editor;
-  }
+    useImperativeHandle(ref, () => ({
+      getValue() {
+        return editorRef.current?.getValue();
+      },
+      setValue(value: string) {
+        console.log('set value: ', value);
+        setEditorInitialValue(value);
+        editorRef.current?.setValue(value);
+      },
+    }));
 
-  return (
-    <div
-      ref={editorContainerRef}
-      className="flex flex-1 flex-col rounded-md border border-gray-300 dark:border-gray-700"
-    >
-      <div className="flex items-center justify-between border-gray-300 border-b p-2 dark:border-gray-700">
-        <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
-          {t('code-editor')}
+    function handleEditorBeforeMount(monaco: {
+      languages: typeof MonacoLanguages;
+    }) {
+      const jsDocToTypeHintId = 80_004;
+      monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
+      monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+      monaco.languages.typescript.javascriptDefaults.addExtraLib(
+        PLUGIN_TYPE_DEF,
+        'file:///node_modules/plugin/index.d.ts'
+      );
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        PLUGIN_TYPE_DEF,
+        'file:///node_modules/plugin/index.d.ts'
+      );
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.ES2020,
+        allowNonTsExtensions: true,
+        moduleResolution:
+          monaco.languages.typescript.ModuleResolutionKind.NodeJs, // ← 解决 2792
+        allowSyntheticDefaultImports: true,
+        module: monaco.languages.typescript.ModuleKind.ESNext,
+        noEmit: true,
+        checkJs: true,
+        allowJs: true,
+        esModuleInterop: true,
+        strict: true,
+      });
+      monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+        diagnosticCodesToIgnore: [jsDocToTypeHintId],
+      });
+    }
+
+    function handleEditorDidMount(editor: MonacoEditor.IStandaloneCodeEditor) {
+      editorRef.current = editor;
+    }
+
+    useEffect(() => {
+      MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
+    }, [theme]);
+
+    function getDefaultContent(type: 'javascript' | 'typescript') {
+      return type === 'javascript'
+        ? DEFAULT_JAVASCRIPT_PLUGIN_CONTENT
+        : DEFAULT_TYPESCRIPT_PLUGIN_CONTENT;
+    }
+
+    return (
+      <div
+        ref={editorContainerRef}
+        className="flex flex-1 flex-col rounded-md border border-gray-300 dark:border-gray-700"
+      >
+        <div className="flex items-center justify-between border-gray-300 border-b p-2 dark:border-gray-700">
+          <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            {t('code-editor')}
+          </div>
         </div>
+        <Editor
+          height="50vh"
+          theme={theme === 'dark' ? 'vs-dark' : 'light'}
+          beforeMount={handleEditorBeforeMount}
+          onMount={handleEditorDidMount}
+          defaultLanguage={scriptType}
+          defaultValue={editorInitialValue}
+        />
       </div>
-      <Editor
-        height="50vh"
-        theme={theme === 'dark' ? 'vs-dark' : 'light'}
-        beforeMount={handleEditorBeforeMount}
-        onMount={handleEditorDidMount}
-        onChange={(value) => onChange(value)}
-        defaultLanguage={scriptType}
-        defaultValue={
-          initialContent.length ? initialContent : getDefaultContent(scriptType)
-        }
-      />
-    </div>
-  );
-}
+    );
+  }
+);

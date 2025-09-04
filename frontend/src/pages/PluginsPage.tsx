@@ -1,26 +1,54 @@
 import { ChevronDown, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AddPluginModal } from '../components/plugins/AddPluginModal';
+import type { PluginConfig } from '../../../common/types/config';
+import { EditPluginModal } from '../components/plugins/EditPluginModal';
 import { PluginListItem } from '../components/plugins/PluginListItem';
 import { Button } from '../components/ui/Button';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { usePluginsStore } from '../stores/plugins-store';
-import type { Plugin } from '../types/plugin';
+import { useToastStore } from '../stores/toast-store';
 
 export default function PluginsPage() {
   const { language } = useLanguageStore();
   const { t } = useTranslation(language);
-  const { plugins, fetchPlugins, togglePluginEnabled } = usePluginsStore();
+  const {
+    plugins,
+    fetchPlugins,
+    deletePlugin,
+    updatePlugin,
+    togglePlugin,
+    createPlugin,
+  } = usePluginsStore();
+  const { showToast } = useToastStore();
 
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isPluginModalOpen, setIsPluginModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<
+    (PluginConfig & { name: string }) | undefined
+  >();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onMounted
   useEffect(() => {
-    fetchPlugins();
-  }, [fetchPlugins]);
+    fetchPlugins().catch((error) => {
+      showToast(
+        error instanceof Error ? error.message : 'Failed to fetch plugins',
+        'error'
+      );
+    });
+  }, []);
 
-  const filteredPlugins = plugins.filter((plugin) => {
+  const pluginMap = plugins;
+  const pluginData: (PluginConfig & { name: string })[] = Object.entries(
+    pluginMap
+  ).map(([name, config]) => ({ name, ...config }));
+
+  const enabledPluginCount = pluginData.filter((p) => p.enabled).length;
+  const disabledPluginCount = pluginData.length - enabledPluginCount;
+
+  const filteredPlugins = pluginData.filter((plugin) => {
     const searchLower = searchText.toLowerCase();
     const matchesSearch =
       searchText === '' || plugin.name.toLowerCase().includes(searchLower);
@@ -33,39 +61,79 @@ export default function PluginsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const enabledPlugins = plugins.filter((p) => p.enabled).length;
-  const disabledPlugins = plugins.length - enabledPlugins;
-
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  const handleAddPlugin = () => {
-    setIsAddModalOpen(true);
+  const handleAddPluginClick = () => {
+    setEditingConfig(undefined);
+    setIsPluginModalOpen(true);
+    setIsEditMode(false);
   };
 
-  const handleAddPluginConfirm = async (pluginData: {
-    name: string;
-    type: 'js' | 'ts' | 'npm' | 'unknown';
-    metadata: Record<string, string>;
-    content: string;
-  }) => {
-    try {
-      // TODO: 实现实际的后端 API 调用
-      // This will be implemented when backend API is ready
-      // pluginData contains: name, type, metadata, content
+  const handleEditPluginClick = (name: string) => {
+    const targetConfig = { name, ...pluginMap[name] };
+    setEditingConfig(targetConfig);
+    setIsPluginModalOpen(true);
+    setIsEditMode(true);
+  };
 
-      // 模拟添加成功，重新获取插件列表
-      await fetchPlugins();
-    } catch (_error) {
-      // TODO: 添加错误处理和用户提示
+  const handleTogglePluginClick = async (name: string) => {
+    try {
+      await togglePlugin(name, !pluginMap[name].enabled);
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Failed to update plugin',
+        'error'
+      );
     }
   };
 
-  const handleEditPlugin = (_plugin: Plugin) => {
-    // TODO: 实现编辑插件功能
+  const handleDeletePluginClick = async (name: string) => {
+    try {
+      await deletePlugin(name);
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Failed to delete plugin',
+        'error'
+      );
+    }
   };
 
-  const handleDeletePlugin = (_name: string) => {
-    // TODO: 实现删除插件功能
+  const handleAddPluginConfirm = async (newPlugin: {
+    name: string;
+    metadata: Record<string, unknown>;
+    content: string;
+  }) => {
+    try {
+      await createPlugin(newPlugin.name, {
+        enabled: true,
+        params: {},
+        dependencies: [],
+        content: newPlugin.content,
+      });
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Failed to create plugin',
+        'error'
+      );
+    }
+  };
+
+  const handleEditPluginConfirm = async (editedConfig: {
+    name: string;
+    metadata: Record<string, unknown>;
+    content: string;
+  }) => {
+    try {
+      await updatePlugin(editedConfig.name, {
+        enabled: pluginMap[editedConfig.name].enabled,
+        params: editedConfig.metadata,
+        dependencies: pluginMap[editedConfig.name].dependencies,
+        content: editedConfig.content,
+      });
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Failed to update plugin',
+        'error'
+      );
+    }
   };
 
   return (
@@ -78,7 +146,7 @@ export default function PluginsPage() {
                 {t('enabled')}
               </p>
               <span className="font-bold text-green-600 text-xl dark:text-green-400">
-                {enabledPlugins}
+                {enabledPluginCount}
               </span>
             </div>
             <div className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
@@ -87,11 +155,15 @@ export default function PluginsPage() {
                 {t('disabled')}
               </p>
               <span className="font-bold text-gray-500 text-xl dark:text-gray-400">
-                {disabledPlugins}
+                {disabledPluginCount}
               </span>
             </div>
           </div>
-          <Button size="medium" variant="primary" onClick={handleAddPlugin}>
+          <Button
+            size="medium"
+            variant="primary"
+            onClick={handleAddPluginClick}
+          >
             <Plus size={16} />
             <span>{t('add-plugin')}</span>
           </Button>
@@ -131,10 +203,11 @@ export default function PluginsPage() {
           filteredPlugins.map((plugin) => (
             <PluginListItem
               key={plugin.name}
-              plugin={plugin}
-              onToggle={togglePluginEnabled}
-              onEdit={handleEditPlugin}
-              onDelete={handleDeletePlugin}
+              name={plugin.name}
+              enabled={plugin.enabled}
+              onToggle={handleTogglePluginClick}
+              onEdit={handleEditPluginClick}
+              onDelete={handleDeletePluginClick}
             />
           ))
         ) : (
@@ -145,12 +218,13 @@ export default function PluginsPage() {
         )}
       </div>
 
-      {/* Add Plugin Modal */}
-      <AddPluginModal
-        isOpen={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
+      <EditPluginModal
+        isOpen={isPluginModalOpen}
+        isEditMode={isEditMode}
+        editingConfig={editingConfig}
+        onOpenChange={setIsPluginModalOpen}
         onAddPlugin={handleAddPluginConfirm}
-        existingPluginNames={plugins.map((p) => p.name)}
+        onEditPlugin={handleEditPluginConfirm}
       />
     </div>
   );

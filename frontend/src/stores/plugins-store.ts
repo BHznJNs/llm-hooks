@@ -1,96 +1,62 @@
 import { create } from 'zustand';
-import type { Plugin } from '../types/plugin';
-
-// 模拟的插件数据
-const mockPlugins: Plugin[] = [
-  {
-    name: 'example-script-plugin',
-    enabled: true,
-    content: 'console.log("Hello from script plugin!");',
-    metadata: {
-      type: 'script',
-      language: 'typescript',
-    },
-  },
-  {
-    name: 'another-npm-plugin',
-    enabled: false,
-    content: '',
-    metadata: {
-      type: 'npm',
-      packageName: '@example/plugin',
-      version: '1.0.0',
-    },
-  },
-];
+import type { PluginConfig } from '../../../common/types/config.ts';
+import { pluginsApi } from '../api/plugins.ts';
 
 export type PluginsState = {
-  plugins: Plugin[];
+  plugins: Record<string, PluginConfig>;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   fetchPlugins: () => Promise<void>;
   createPlugin: (
-    plugin: Omit<Plugin, 'createdAt' | 'updatedAt'>
+    name: string,
+    newPluginConfig: PluginConfig & { content?: string }
   ) => Promise<void>;
-  updatePlugin: (name: string, updates: Partial<Plugin>) => Promise<void>;
+  updatePlugin: (
+    name: string,
+    newConfig: PluginConfig & { content?: string }
+  ) => Promise<void>;
+  togglePlugin: (name: string, enabled: boolean) => Promise<void>;
   deletePlugin: (name: string) => Promise<void>;
-  togglePluginEnabled: (name: string) => Promise<void>;
 };
 
-export const usePluginsStore = create<PluginsState>((set) => ({
-  plugins: [],
+export const usePluginsStore = create<PluginsState>((set, get) => ({
+  plugins: {},
   isLoading: false,
   error: null,
 
   fetchPlugins: async () => {
-    const API_CALL_DELAY = 500;
-    set({ isLoading: true, error: null });
-    try {
-      await new Promise((resolve) => setTimeout(resolve, API_CALL_DELAY));
-      set({ plugins: mockPlugins, isLoading: false });
-    } catch {
-      set({ error: 'Failed to fetch plugins', isLoading: false });
+    const pluginData = await pluginsApi.getAll();
+    set({ plugins: pluginData });
+  },
+
+  createPlugin: async (name, newPluginConfig) => {
+    const isExist = await pluginsApi.has(name);
+    if (isExist) {
+      throw new Error('Plugin already exists');
     }
+    await pluginsApi.create({ name, ...newPluginConfig });
+    await get().fetchPlugins();
   },
 
-  createPlugin: async (plugin) => {
-    await fetch('/api/plugins');
+  updatePlugin: async (name, newConfig) => {
+    await pluginsApi.update({ name, ...newConfig });
+  },
+
+  togglePlugin: async (name, enabled) => {
+    await pluginsApi.toggle(name, enabled);
     set((state) => ({
-      plugins: [
+      ...state,
+      plugins: {
         ...state.plugins,
-        {
-          ...plugin,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as unknown as Plugin,
-      ],
-    }));
-  },
-
-  updatePlugin: async (name, updates) => {
-    await fetch('/api/plugins');
-    set((state) => ({
-      plugins: state.plugins.map((p) =>
-        p.name === name ? { ...p, ...updates, updatedAt: new Date() } : p
-      ),
+        [name]: { ...state.plugins[name], enabled },
+      },
     }));
   },
 
   deletePlugin: async (name) => {
-    await fetch('/api/plugins');
-    set((state) => ({
-      plugins: state.plugins.filter((p) => p.name !== name),
-    }));
-  },
-
-  togglePluginEnabled: async (name) => {
-    await fetch('/api/plugins');
-    set((state) => ({
-      plugins: state.plugins.map((p) =>
-        p.name === name ? { ...p, enabled: !p.enabled } : p
-      ),
-    }));
+    await pluginsApi.delete(name);
+    await get().fetchPlugins();
   },
 }));
