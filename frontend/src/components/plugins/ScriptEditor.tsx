@@ -13,6 +13,15 @@ import {
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import { useThemeStore } from '../../stores/theme-store';
+// biome-ignore lint/suspicious/noTsIgnore: <explanation>
+// @ts-ignore
+import AI_SDK_TYPE_DEFINITIONS from '../../types/ai-sdk.d.ts?raw';
+// biome-ignore lint/suspicious/noTsIgnore: <explanation>
+// @ts-ignore
+import OPENAI_TYPE_DEFINITIONS from '../../types/openai.d.ts?raw';
+// biome-ignore lint/suspicious/noTsIgnore: <explanation>
+// @ts-ignore
+import PLUGIN_TYPE_DEFINITIONS from '../../types/plugin.d.ts?raw';
 
 export type ScriptEditorHandle = {
   getValue: () => string | undefined;
@@ -22,52 +31,17 @@ type ScriptEditorProps = {
   scriptType: 'javascript' | 'typescript';
 };
 
-const PLUGIN_TYPE_DEF = `\
+const SDK_TYPE_DEF = `\
 declare module 'llm-hooks-sdk' {
-export type Logger = {
-  info: (message: string) => void;
-  warn: (message: string) => void;
-  error: (message: string) => void;
-  debug: (message: string) => void;
-}
+${AI_SDK_TYPE_DEFINITIONS}
 
-export type PluginArguments<T> = {
-  data: T;
-  logger: Logger;
-  model: LlmModel;
-  config: Record<string, unknown>;
-};
+${OPENAI_TYPE_DEFINITIONS}
 
-export type Plugin = Partial<{
-  beforeUpstreamRequest: (
-    args: PluginArguments<{
-      requestParams: OpenAI.ChatCompletionRequest;
-      providerOptions: Record<string, unknown>;
-    }>
-  ) => {
-    requestParams: OpenAI.ChatCompletionRequest;
-    providerOptions?: Record<string, unknown>;
-  };
-  onUpstreamChunk: (
-    args: PluginArguments<OpenAI.ChatCompletionResponseChunk>
-  ) => OpenAI.ChatCompletionResponseChunk | null;
-  afterUpstreamResponse: (
-    args: PluginArguments<OpenAI.ChatCompletionResponse | string>,
-    isStream: boolean
-  ) =>
-    | OpenAI.ChatCompletionResponse
-    | ReadableStream<
-        | OpenAI.ChatCompletionResponseChunk
-        | OpenAI.ChatCompletionResponseErrorChunk
-      >;
-  onFetchModelList: (
-    args: PluginArguments<OpenAI.ModelListResponse>
-  ) => OpenAI.ModelListResponse;
-}>;
+${PLUGIN_TYPE_DEFINITIONS}
 }`;
 
 const DEFAULT_JAVASCRIPT_PLUGIN_CONTENT = `\
-import { Plugin, PluginArguments } from 'llm-hooks-sdk';
+import { Plugin } from 'llm-hooks-sdk';
 
 /**
  * @type {Plugin}
@@ -78,7 +52,7 @@ const plugin = {
 export default plugin;`;
 
 const DEFAULT_TYPESCRIPT_PLUGIN_CONTENT = `\
-import type { Plugin, PluginArguments } from 'llm-hooks-sdk';
+import type { Plugin } from 'llm-hooks-sdk';
 
 export default {
     
@@ -105,6 +79,10 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
       },
     }));
 
+    useEffect(() => {
+      MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
+    }, [theme]);
+
     function handleEditorBeforeMount(monaco: {
       languages: typeof MonacoLanguages;
     }) {
@@ -112,11 +90,11 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
       monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
       monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
       monaco.languages.typescript.javascriptDefaults.addExtraLib(
-        PLUGIN_TYPE_DEF,
+        SDK_TYPE_DEF,
         'file:///node_modules/plugin/index.d.ts'
       );
       monaco.languages.typescript.typescriptDefaults.addExtraLib(
-        PLUGIN_TYPE_DEF,
+        SDK_TYPE_DEF,
         'file:///node_modules/plugin/index.d.ts'
       );
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -143,10 +121,6 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
       editorRef.current = editor;
     }
 
-    useEffect(() => {
-      MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
-    }, [theme]);
-
     function getDefaultContent(type: 'javascript' | 'typescript') {
       return type === 'javascript'
         ? DEFAULT_JAVASCRIPT_PLUGIN_CONTENT
@@ -168,7 +142,8 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
           theme={theme === 'dark' ? 'vs-dark' : 'light'}
           beforeMount={handleEditorBeforeMount}
           onMount={handleEditorDidMount}
-          defaultLanguage={scriptType}
+          language={scriptType}
+          path={scriptType === 'javascript' ? 'index.js' : 'index.ts'}
           defaultValue={editorInitialValue}
         />
       </div>
