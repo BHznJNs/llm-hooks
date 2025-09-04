@@ -43,7 +43,6 @@ class PluginConfigController {
     for (const row of rows) {
       result[row.name] = {
         enabled: row.enabled,
-        dependencies: row.dependencies,
         params: row.params as Record<string, unknown>,
       };
     }

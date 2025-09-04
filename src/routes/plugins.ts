@@ -37,19 +37,18 @@ plugins.get('/content/:plugin_name', async (c: Context) => {
 });
 
 plugins.post('/', async (c: Context) => {
-  const { name, params, dependencies, content } = await c.req.json<{
+  const { name, params, content } = await c.req.json<{
     name: string;
     params: Record<string, unknown>;
-    dependencies: string[];
     content?: string;
   }>();
   moduleLogger.info(`Creating plugin: ${name}`);
   try {
     await Promise.all([
       pluginConfigController.saveBatch({
-        [name]: { enabled: true, dependencies, params },
+        [name]: { enabled: true, params },
       }),
-      pluginInstanceController.save(name, dependencies, content),
+      pluginInstanceController.save(name, content),
     ]);
   } catch (_error) {
     throw new Error('Failed to save plugin');
@@ -82,16 +81,15 @@ plugins.put('/toggle/:plugin_name', async (c: Context) => {
 });
 
 plugins.put('/', async (c: Context) => {
-  const { name, enabled, params, dependencies, content } = await c.req.json<{
+  const { name, enabled, params, content } = await c.req.json<{
     name: string;
     enabled: boolean;
     params: Record<string, unknown>;
-    dependencies: string[];
     content?: string;
   }>();
   await Promise.all([
-    pluginConfigController.update(name, { enabled, params, dependencies }),
-    pluginInstanceController.save(name, dependencies, content),
+    pluginConfigController.update(name, { enabled, params }),
+    pluginInstanceController.save(name, content),
   ]);
   return c.json(null);
 });

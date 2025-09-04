@@ -20,6 +20,16 @@ const packageJsonPath = path.join(scriptPluginDirectory, 'package.json');
 const scriptPluginPathFactory = (name: string) =>
   path.join(scriptPluginDirectory, name);
 
+function collectDeps(scriptContent: string): string[] {
+  const RE_STATIC =
+    /(?:^|\s)import\s+(?:type\s+)?(?:[\s\S]*?)\bfrom\s+['"]([^'"]+)['"]\s*;?/gm;
+  const deps = new Set<string>();
+  for (const m of scriptContent.matchAll(RE_STATIC)) {
+    deps.add(m[1]!);
+  }
+  return [...deps];
+}
+
 class ScriptController {
   /**
    * @description
@@ -51,11 +61,7 @@ class ScriptController {
     return module.default;
   }
 
-  async install(
-    name: string,
-    content: string,
-    dependencies: string[]
-  ): Promise<void> {
+  async install(name: string, content: string): Promise<void> {
     const scriptPluginPath = scriptPluginPathFactory(name);
     await fs.mkdir(scriptPluginDirectory, { recursive: true });
     try {
@@ -65,6 +71,7 @@ class ScriptController {
       await fs.writeFile(packageJsonPath, '{"type": "module"}');
     }
     await fs.writeFile(scriptPluginPath, content);
+    const dependencies = collectDeps(content);
     await npmInstall(dependencies, scriptPluginDirectory);
   }
 }

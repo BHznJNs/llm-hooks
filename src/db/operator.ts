@@ -54,7 +54,6 @@ class DatabaseOperator {
       .select({
         name: pluginConfigs.name,
         enabled: pluginConfigs.enabled,
-        dependencies: pluginConfigs.dependencies,
         params: pluginConfigs.params,
       } as const)
       .from(pluginConfigs)
@@ -76,7 +75,6 @@ class DatabaseOperator {
         target: pluginConfigs.name,
         set: {
           enabled: eq(pluginConfigs.enabled, true),
-          dependencies: pluginConfigs.dependencies,
           params: pluginConfigs.params,
         },
       });

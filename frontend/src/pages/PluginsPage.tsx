@@ -105,7 +105,6 @@ export default function PluginsPage() {
       await createPlugin(newPlugin.name, {
         enabled: true,
         params: {},
-        dependencies: [],
         content: newPlugin.content,
       });
     } catch (error) {
@@ -125,7 +124,6 @@ export default function PluginsPage() {
       await updatePlugin(editedConfig.name, {
         enabled: pluginMap[editedConfig.name].enabled,
         params: editedConfig.metadata,
-        dependencies: pluginMap[editedConfig.name].dependencies,
         content: editedConfig.content,
       });
     } catch (error) {

@@ -24,6 +24,5 @@ export type AppConfig = {
 
 export type PluginConfig = {
   enabled: boolean;
-  dependencies: string[];
   params: Record<string, unknown>;
 };

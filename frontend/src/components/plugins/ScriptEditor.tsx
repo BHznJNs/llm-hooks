@@ -23,7 +23,7 @@ type ScriptEditorProps = {
 };
 
 const PLUGIN_TYPE_DEF = `\
-declare module 'plugin' {
+declare module 'llm-hooks-sdk' {
 export type Logger = {
   info: (message: string) => void;
   warn: (message: string) => void;
@@ -64,11 +64,10 @@ export type Plugin = Partial<{
     args: PluginArguments<OpenAI.ModelListResponse>
   ) => OpenAI.ModelListResponse;
 }>;
-}
-`;
+}`;
 
 const DEFAULT_JAVASCRIPT_PLUGIN_CONTENT = `\
-import { Plugin, PluginArguments } from 'plugin';
+import { Plugin, PluginArguments } from 'llm-hooks-sdk';
 
 /**
  * @type {Plugin}
@@ -79,11 +78,11 @@ const plugin = {
 export default plugin;`;
 
 const DEFAULT_TYPESCRIPT_PLUGIN_CONTENT = `\
-import type { Plugin, PluginArguments } from 'plugin';
+import type { Plugin, PluginArguments } from 'llm-hooks-sdk';
 
 export default {
     
-} satisfies Plugin`;
+} satisfies Plugin;`;
 
 export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
   ({ scriptType }, ref) => {
@@ -101,7 +100,6 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
         return editorRef.current?.getValue();
       },
       setValue(value: string) {
-        console.log('set value: ', value);
         setEditorInitialValue(value);
         editorRef.current?.setValue(value);
       },

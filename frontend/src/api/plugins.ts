@@ -34,7 +34,6 @@ export const pluginsApi = {
   async create(data: {
     name: string;
     params: Record<string, unknown>;
-    dependencies: string[];
     content?: string;
   }): Promise<void> {
     const response = await fetch(`${API_BASE}`, {
@@ -53,7 +52,6 @@ export const pluginsApi = {
   async update(data: {
     name: string;
     params: Record<string, unknown>;
-    dependencies: string[];
     content?: string;
   }): Promise<void> {
     const response = await fetch(`${API_BASE}`, {

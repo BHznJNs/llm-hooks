@@ -4,7 +4,6 @@ import { PluginManager } from 'live-plugin-manager';
 import type { Plugin } from '../types/plugin.ts';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
-import pluginConfigController from './plugin-config.ts';
 import scriptController from './script.ts';
 
 const pluginManager = await (async () => {
@@ -64,19 +63,11 @@ class PluginInstanceController {
     try {
       await fs.access(pluginModulePath, fs.constants.R_OK);
     } catch {
-      const [pluginScriptContent, pluginConfigMap] = await Promise.all([
-        dbOperator.fetchScript(name),
-        pluginConfigController.loadBatch([name]),
-      ]);
-      if (!pluginScriptContent || pluginConfigMap[name] === undefined) {
+      const pluginScriptContent = await dbOperator.fetchScript(name);
+      if (!pluginScriptContent) {
         return null;
       }
-      const pluginConfig = pluginConfigMap[name];
-      await scriptController.install(
-        name,
-        pluginScriptContent,
-        pluginConfig.dependencies
-      );
+      await scriptController.install(name, pluginScriptContent);
     }
     return await scriptController.load(name);
   }
@@ -96,31 +87,23 @@ class PluginInstanceController {
     return await scriptController.load(name);
   }
 
-  private async saveForDocker(
-    name: string,
-    dependencies: string[],
-    content?: string
-  ): Promise<void> {
+  private async saveForDocker(name: string, content?: string): Promise<void> {
     if (isPluginAnNpmPackage(name)) {
       await pluginManager.install(name);
     } else {
       const { default: dbOperator } = await import('../db/operator.ts');
       await Promise.all([
-        scriptController.install(name, content!, dependencies!),
+        scriptController.install(name, content!),
         dbOperator.saveScript(name, content!),
       ]);
     }
   }
 
-  private async saveForLocal(
-    name: string,
-    dependencies: string[],
-    content?: string
-  ): Promise<void> {
+  private async saveForLocal(name: string, content?: string): Promise<void> {
     if (isPluginAnNpmPackage(name)) {
       await pluginManager.install(name);
     } else {
-      await scriptController.install(name, content!, dependencies!);
+      await scriptController.install(name, content!);
     }
   }
 
@@ -172,16 +155,15 @@ class PluginInstanceController {
 
   async save(
     name: string,
-    dependencies: string[],
     content?: string // only for script plugin
   ): Promise<void> {
     try {
       switch (runtime) {
         case 'docker':
-          await this.saveForDocker(name, dependencies, content);
+          await this.saveForDocker(name, content);
           break;
         case 'local':
-          await this.saveForLocal(name, dependencies, content);
+          await this.saveForLocal(name, content);
           break;
       }
     } catch (error) {

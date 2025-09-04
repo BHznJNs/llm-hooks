@@ -35,7 +35,6 @@ export const pluginConfigs = pgTable('plugin_configs', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
-  dependencies: text('dependencies').array().notNull().default([]),
   params: jsonb('params').notNull().default({}),
 });
 
