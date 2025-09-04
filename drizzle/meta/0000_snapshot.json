@@ -1,5 +1,5 @@
 {
-  "id": "08d4de46-fe65-40e9-a2f0-e13e5c7edc7b",
+  "id": "73e292e4-c950-4d11-8b0e-75156ee3e7fa",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -63,13 +63,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "dependencies": {
-          "name": "dependencies",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
         },
         "params": {
           "name": "params",

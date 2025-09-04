@@ -9,7 +9,6 @@ CREATE TABLE "plugin_configs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
-	"dependencies" text[] DEFAULT '{}' NOT NULL,
 	"params" jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 --> statement-breakpoint
