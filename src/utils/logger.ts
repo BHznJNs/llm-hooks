@@ -5,7 +5,7 @@ type PinoLogger = pino.Logger<never, boolean>;
 class Logger {
   private readonly _instance: PinoLogger;
   constructor() {
-    this._instance = pino();
+    this._instance = pino({ level: 'debug' });
   }
 
   get instance(): PinoLogger {

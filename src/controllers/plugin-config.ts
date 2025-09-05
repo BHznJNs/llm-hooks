@@ -133,6 +133,14 @@ class PluginConfigController {
   }
 
   async saveBatch(pluginConfigs: Record<string, PluginConfig>): Promise<void> {
+    // remove duplicated items of pluginConfigs
+    const pluginNames = Object.keys(pluginConfigs);
+    const uniquePluginNames = new Set(pluginNames).keys();
+    const filteredPluginConfigs: Record<string, PluginConfig> = {};
+    for (const name of uniquePluginNames) {
+      filteredPluginConfigs[name] = pluginConfigs[name]!;
+    }
+
     try {
       switch (runtime) {
         case 'docker':

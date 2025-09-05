@@ -2,10 +2,10 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import type { AppConfig, PluginConfig } from '../../common/types/config.ts';
 import { type Database, db } from './index.ts';
 import { appConfigs, pluginConfigs, pluginScripts } from './schema.ts';
+import { logger } from '../utils/logger.ts';
 
 class DatabaseOperator {
   private readonly db: Database;
-  // private readonly logger = logger.moduleLogger('database-operator');
 
   constructor(db_: Database) {
     this.db = db_;
@@ -32,7 +32,10 @@ class DatabaseOperator {
     await this.db
       .insert(pluginScripts)
       .values({ id: name, content })
-      .onConflictDoUpdate({ target: pluginScripts.id, set: { content } });
+      .onConflictDoUpdate({
+        target: pluginScripts.id,
+        set: { content },
+      });
   }
 
   async deleteScript(name: string): Promise<void> {
@@ -70,14 +73,7 @@ class DatabaseOperator {
     );
     await this.db
       .insert(pluginConfigs)
-      .values(dataToSave)
-      .onConflictDoUpdate({
-        target: pluginConfigs.name,
-        set: {
-          enabled: pluginConfigs.enabled,
-          params: sql`EXCLUDED.params`,
-        },
-      });
+      .values(dataToSave);
   }
 
   async updatePluginConfig(name: string, partialConfig: Partial<PluginConfig>) {
@@ -136,9 +132,9 @@ class DatabaseOperator {
       .onConflictDoUpdate({
         target: appConfigs.id,
         set: {
-          upstream: appConfigs.upstream,
-          assistant: appConfigs.assistant,
-          plugins: appConfigs.plugins,
+          upstream: sql`EXCLUDED.upstream`,
+          assistant: sql`EXCLUDED.assistant`,
+          plugins: sql`EXCLUDED.plugins`,
         },
       });
   }
@@ -148,4 +144,27 @@ class DatabaseOperator {
    */
 }
 
-export default new DatabaseOperator(db);
+const operatorInstance = new DatabaseOperator(db);
+const moduleLogger = logger.moduleLogger('db-operator');
+const proxy = new Proxy(operatorInstance, {
+  get(target, prop, receiver) {
+    const orig = Reflect.get(target, prop, receiver);
+    if (typeof orig !== 'function') {
+      return orig;
+    }
+    return async (...args: any[]) => {
+      const start = performance.now();
+      try {
+        const result = await orig.apply(target, args);
+        return result;
+      } catch (error) {
+        throw error;
+      } finally {
+        const end = performance.now();
+        const duration = (end - start).toFixed(2);
+        moduleLogger.debug(`operation: "${String(prop)}", duration: ${duration}ms`);
+      }
+    };
+  },
+});
+export default proxy;
