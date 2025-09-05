@@ -33,16 +33,6 @@ export const useHooksStore = create<HooksState & HooksActions>((set, get) => ({
   isSaving: false,
   isLoading: false,
 
-  updateHookOrder: (hookType, newOrder) => {
-    set((state) => ({
-      hasChanges: true,
-      hooks: {
-        ...state.hooks,
-        [hookType]: newOrder,
-      },
-    }));
-  },
-
   fetchHooks: async () => {
     set({ isLoading: true });
     const data = await hooksApi.getHooks();
@@ -68,6 +58,16 @@ export const useHooksStore = create<HooksState & HooksActions>((set, get) => ({
       isLoading: false,
       hasChanges: false,
     });
+  },
+
+  updateHookOrder: (hookType, newOrder) => {
+    set((state) => ({
+      hasChanges: true,
+      hooks: {
+        ...state.hooks,
+        [hookType]: newOrder,
+      },
+    }));
   },
 
   saveChanges: async () => {

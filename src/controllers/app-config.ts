@@ -6,8 +6,6 @@ import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 
 const DEFAULT_CONFIG = {
-  theme: 'system',
-  language: 'en',
   upstream: {
     baseUrl: 'https://api.openai.com/v1',
     provider: 'openai',
@@ -24,7 +22,7 @@ const DEFAULT_CONFIG = {
     afterUpstreamResponse: [],
     onFetchModelList: [],
   },
-} satisfies AppConfig;
+} as const satisfies AppConfig;
 
 class AppConfigController {
   private cache: AppConfig | null = null;
@@ -32,7 +30,7 @@ class AppConfigController {
 
   private async loadForDocker(): Promise<AppConfig | null> {
     const { default: dbOperator } = await import('../db/operator.ts');
-    const result = await dbOperator.fetchAppConfig();
+    const result = await dbOperator.fetchAppConfig(DEFAULT_CONFIG);
     if (result === null) {
       throw new Error('Failed to load or create app configuration');
     }

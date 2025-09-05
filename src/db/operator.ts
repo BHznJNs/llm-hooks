@@ -99,19 +99,34 @@ class DatabaseOperator {
    * App config operations start
    */
 
-  async fetchAppConfig(): Promise<AppConfig | null> {
-    const result = await this.db
-      .select({
+  async fetchAppConfig(defaultConfig: AppConfig): Promise<AppConfig | null> {
+    const [row] = await this.db
+      .insert(appConfigs)
+      .values({
+        upstream: defaultConfig.upstream,
+        assistant: defaultConfig.assistant,
+        plugins: defaultConfig.plugins,
+      })
+      .onConflictDoNothing()
+      .returning({
         upstream: appConfigs.upstream,
         assistant: appConfigs.assistant,
         plugins: appConfigs.plugins,
-      } as const)
-      .from(appConfigs)
-      .limit(1);
-    if (result.length === 0) {
-      return null;
+      });
+    if (row) {
+      return row;
     }
-    return result[0] as AppConfig;
+    return (
+      (await this.db
+        .select({
+          upstream: appConfigs.upstream,
+          assistant: appConfigs.assistant,
+          plugins: appConfigs.plugins,
+        })
+        .from(appConfigs)
+        .limit(1)
+        .then((r) => r[0])) ?? null
+    );
   }
 
   async saveAppConfig(config: AppConfig) {

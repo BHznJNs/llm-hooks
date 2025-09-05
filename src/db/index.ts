@@ -4,7 +4,6 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
-import { appConfigs } from './schema.ts';
 
 function removeSslModeFromUrl(urlString: string): string {
   const url = new URL(urlString);
@@ -72,7 +71,7 @@ class DatabaseController {
 
   private async ensureConnections() {
     try {
-      await this._db?.select({ value: sql<number>`1` }).from(appConfigs);
+      await this._db?.select({ value: sql<number>`1` }).from(sql`pg_database`);
     } catch (error) {
       moduleLogger.error(`Error connecting to database: ${error}`);
       this.closeConnections();

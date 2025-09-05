@@ -4,9 +4,6 @@ export type LlmProvider = 'openai' | 'google' | 'anthropic';
 export type AppTheme = 'dark' | 'light' | 'system';
 
 export type AppConfig = {
-  theme: AppTheme;
-  language: string;
-
   upstream: {
     baseUrl: string;
     provider: LlmProvider;
