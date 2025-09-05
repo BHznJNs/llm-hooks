@@ -32,7 +32,7 @@ async function hookWrapper(
     plugin: Plugin,
     pluginConfig: PluginConfig,
     utils: { logger: Logger; model: LlmModel }
-  ) => unknown
+  ) => Promise<unknown>
 ): Promise<void> {
   const assistantModel = assistantModelFactory(config);
   const pluginNames = config.plugins[hookName];
@@ -69,13 +69,16 @@ export default class HooksHandler {
     await hookWrapper(
       'onFetchModelList',
       config,
-      (plugin, pluginConfig, utils) => {
-        finalResponse = plugin.onFetchModelList!({
+      async (plugin, pluginConfig, utils) => {
+        const result = await plugin.onFetchModelList!({
           data: finalResponse,
           logger: utils.logger,
           model: utils.model,
           config: pluginConfig.params,
         });
+        if (result !== null) {
+          finalResponse = result;
+        }
       }
     );
     return finalResponse;
@@ -95,13 +98,16 @@ export default class HooksHandler {
     await hookWrapper(
       'beforeUpstreamRequest',
       config,
-      (plugin, pluginConfig, utils) => {
-        const hookResult = plugin.beforeUpstreamRequest!({
+      async (plugin, pluginConfig, utils) => {
+        const hookResult = await plugin.beforeUpstreamRequest!({
           data: { requestParams: finalRequest, providerOptions },
           logger: utils.logger,
           model: utils.model,
           config: pluginConfig.params,
         });
+        if (hookResult === null) {
+          return;
+        }
         finalRequest = hookResult.requestParams;
         if (hookResult.providerOptions !== undefined) {
           providerOptions =
@@ -123,8 +129,8 @@ export default class HooksHandler {
     await hookWrapper(
       'onUpstreamChunk',
       config,
-      (plugin, pluginConfig, utils) => {
-        const hookResult = plugin.onUpstreamChunk!({
+      async (plugin, pluginConfig, utils) => {
+        const hookResult = await plugin.onUpstreamChunk!({
           data: finalChunk,
           logger: utils.logger,
           model: utils.model,
@@ -150,8 +156,8 @@ export default class HooksHandler {
       await hookWrapper(
         'afterUpstreamResponse',
         config,
-        (plugin, pluginConfig, utils) => {
-          const hookResult = plugin.afterUpstreamResponse!(
+        async (plugin, pluginConfig, utils) => {
+          const hookResult = await plugin.afterUpstreamResponse!(
             {
               data: finalResponse,
               logger: utils.logger,
@@ -176,7 +182,7 @@ export default class HooksHandler {
       'afterUpstreamResponse',
       config,
       async (plugin, pluginConfig, utils) => {
-        const hookResult = plugin.afterUpstreamResponse!(
+        const hookResult = await plugin.afterUpstreamResponse!(
           {
             data: tempResponse.collectedResponse,
             logger: utils.logger,
@@ -184,13 +190,16 @@ export default class HooksHandler {
             config: pluginConfig.params,
           },
           isStream
-        ) as ReadableStream<
-          | OpenAI.ChatCompletionResponseChunk
-          | OpenAI.ChatCompletionResponseErrorChunk
-        >;
+        );
+        if (hookResult === null) {
+          return;
+        }
         const processed = await responseStreamProcessor(
           config,
-          hookResult,
+          hookResult as ReadableStream<
+            | OpenAI.ChatCompletionResponseChunk
+            | OpenAI.ChatCompletionResponseErrorChunk
+          >,
           tempResponse.stream
         );
         if (processed?.collectedResponse) {
