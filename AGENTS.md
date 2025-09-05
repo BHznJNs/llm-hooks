@@ -5,7 +5,7 @@ category: "后端服务"
 author: "BHznJNs"
 authorUrl: "https://github.com/BHznJNs"
 tags: ["TypeScript", "Hono", "LLM", "OpenAI", "Google", "Anthropic", "AI Gateway"]
-lastUpdated: "2025-09-01"
+lastUpdated: "2025-09-05"
 ---
 
 # llm-hooks
@@ -26,7 +26,6 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
 - **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
-- **插件管理**: [live-plugin-manager](https://github.com/sgenoni/live-plugin-manager) - 动态插件管理
 
 ### 前端技术栈
 
@@ -52,6 +51,7 @@ llm-hooks/
 │       └── provider.ts        # LLM 提供商类型定义
 ├── frontend/                  # 前端项目目录
 │   ├── src/
+│   │   ├── api/               # API 请求统一封装
 │   │   ├── components/        # React 组件
 │   │   ├── lib/               # 工具库
 │   │   ├── pages/             # 页面组件
@@ -75,9 +75,11 @@ llm-hooks/
 │   ├── controllers/           # 控制器层
 │   │   ├── app-config.ts      # 应用配置控制器
 │   │   ├── plugin-config.ts   # 插件配置控制器
-│   │   └── plugin-instance.ts # 插件实例控制器
+│   │   ├── plugin-instance.ts # 插件实例控制器
+│   │   └── script.ts          # 脚本控制器
 │   ├── db/
 │   │   ├── index.ts           # 数据库连接和导出
+│   │   ├── operator.ts        # 数据库操作统一封装
 │   │   └── schema.ts          # 数据库模式定义
 │   ├── openai-routes/         # OpenAI API 路由
 │   │   ├── chat-completions.ts # 聊天完成接口
@@ -95,11 +97,14 @@ llm-hooks/
 │       ├── field-utils.ts     # 字段处理工具
 │       ├── logger.ts          # 日志记录工具
 │       ├── llm-client-factory.ts # LLM 客户端工厂函数
+│       ├── npm.ts             # NPM 相关工具函数
 │       ├── response-code.ts   # HTTP 响应代码工具
 │       ├── runtime.ts         # 运行时环境工具
 │       ├── stream-utils.ts    # 流式处理工具
 │       └── type-utils.ts      # 类型工具函数
 ├── drizzle/                   # 数据库迁移文件
+├── examples/                  # 插件示例
+├── scripts/                   # 构建脚本
 ├── .gitignore                 # Git 忽略文件
 ├── Dockerfile                 # Docker 容器配置
 ├── AGENTS.md                  # 项目代理文档
@@ -126,6 +131,7 @@ llm-hooks/
 - **样式规范**: 使用 TailwindCSS 类名，禁止写 css/scss
 - **网络请求**: 统一封装成 hooks，放在 `frontend/src/api/`
 - **页面路由**: 在 `frontend/src/pages/` 新增组件即自动成为路由
+- **组件提取**: 通用组件应提取到 `frontend/src/components/` 中，如按钮等基础组件
 
 ### 命名约定
 
@@ -173,47 +179,43 @@ npm run dev
 
 ## 核心功能实现
 
-### 架构设计
+### 架构设计进化
 
-项目采用分层架构设计：
+项目采用分层架构设计，通过数据库操作模块实现了数据持久化的统一管理：
 
 1. **控制器层** (`src/controllers/`): 负责业务逻辑处理
-   - `AppConfigController`: 应用配置管理
-   - `PluginConfigController`: 插件配置管理
-   - `PluginInstanceController`: 插件实例管理
+   - `AppConfigController`: 应用配置管理，优化了数据库存储
+   - `PluginConfigController`: 插件配置管理，支持批量操作
+   - `PluginInstanceController`: 插件实例管理，负责插件的加载和卸载
+   - `ScriptController`: 脚本控制器，负责脚本文件的保存和管理
 
-2. **路由层** (`src/routes/`, `src/openai-routes/`): 处理 HTTP 请求
+2. **数据库层** (`src/db/`): 统一的数据库操作封装
+   - `DatabaseOperator`: 数据库操作统一代理，提供统一的数据库访问接口
+   - 数据库连接和模式定义
+   - 预连接数据库机制优化 Docker 部署性能
+
+3. **路由层** (`src/routes/`, `src/openai-routes/`): 处理 HTTP 请求
    - API 路由统一管理
    - OpenAI 兼容路由分离
+   - 支持 API 超时处理机制
 
-3. **工具层** (`src/utils/`): 提供通用工具函数
+4. **工具层** (`src/utils/`): 提供通用工具函数
 
-### 数据持久化
+### 数据持久化架构进化
 
 #### 本地运行
 
-直接将应用配置、插件脚本和通过 npm 安装的插件放在用户的数据目录下，在运行时直接通过绝对路径加载配置及插件。
+保持原有方式，将应用配置、插件脚本和通过 npm 安装的插件放在用户的数据目录下，在运行时直接通过绝对路径加载配置及插件。
 
 #### Docker 部署
 
-将应用配置、插件脚本持久化到数据库中，在运行时从数据库中读出配置和脚本内容。
+实现完整的数据库持久化方案：
 
-### LLM 客户端工厂
-
-项目通过 `llmClientFactory` 函数支持多种 LLM 提供商，包括 OpenAI、Google 和 Anthropic。该函数根据传入的提供商类型和 API 密钥创建相应的客户端实例。
-
-### API 路由处理
-
-项目使用 Hono 框架定义了完整的 API 路由，采用模块化设计：
-
-#### 管理接口 (`/api/`)
-- `/api/hooks` - Hook 配置管理
-- `/api/plugins` - 插件管理
-- `/api/settings` - 系统设置
-
-#### OpenAI 兼容接口 (`/openai/`)
-- `/openai/chat/completions` - 聊天完成接口
-- `/openai/models` - 模型列表接口
+- **统一操作接口**: 通过 `DatabaseOperator` 类统一管理数据库操作
+- **预连接优化**: Docker 环境下预连接数据库，提高启动性能
+- **脚本持久化**: 插件脚本内容直接存入数据库，无需文件系统依赖
+- **迁移支持**: 使用 drizzle ORM 提供完整的数据库迁移功能
+- **配置缓存**: 数据库操作结果缓存提高性能
 
 ### Hook 机制实现
 
@@ -222,45 +224,47 @@ npm run dev
 - `beforeUpstreamRequest` - 上游请求前处理
 - `onUpstreamChunk` - 上游数据流处理
 - `afterUpstreamResponse` - 上游响应后处理
-- `onFetchModelList` - 模型列表获取处理
+- `onFetchModelList` - 模型列表获取后处理
 
 ### 插件系统
 
 项目支持动态插件加载，插件可以声明依赖，在运行时会自动安装对应依赖。
 
-#### 插件配置类型
+#### 插件配置类型（已优化）
 
 ```typescript
 export type PluginConfig = {
   enabled: boolean;
-  dependencies: string[];
   params: Record<string, unknown>;
 };
 ```
 
 #### 控制器架构
 
-- **AppConfigController**: 负责应用配置的加载和保存
+- **AppConfigController**: 负责应用配置的加载和保存，支持数据库存储优化
 - **PluginConfigController**: 负责插件配置的批量管理
 - **PluginInstanceController**: 负责插件实例的加载、保存和删除
+- **ScriptController**: 负责插件脚本的保存和管理，支持数据库存储
 
 #### 支持的运行时环境
 
-- Docker 环境
+- Docker 环境（支持预连接数据库）
 - 本地开发环境
 
 #### 支持的插件类型
 
 - NPM 包插件
 - 本地 TypeScript/JavaScript 插件
+- 数据库存储的脚本插件
 
 ### 缓存机制
 
-项目实现了插件缓存机制以提高性能：
+项目实现了多级缓存机制以提高性能：
 
-- 应用配置缓存
-- 插件配置缓存
-- 插件实例缓存
+- **应用配置缓存**: 减少配置读取延迟
+- **插件配置缓存**: 优化插件加载性能
+- **插件实例缓存**: 避免重复实例化
+- **数据库操作缓存**: 减少数据库查询次数
 
 ### 工具函数
 
@@ -290,6 +294,10 @@ export type PluginConfig = {
 
 提供跨平台的应用数据路径管理。
 
+#### NPM 工具 (`src/utils/npm.ts`)
+
+提供 NPM 包管理功能，用于插件依赖安装。
+
 ## 前端功能实现
 
 ### 路由系统
@@ -297,20 +305,29 @@ export type PluginConfig = {
 前端使用 [@tanstack/react-router](https://tanstack.com/router) 实现声明式路由管理，目前包含以下页面路由：
 
 - `/` - Hooks 页面
-- `/plugins` - 插件管理页面
+- `/plugins` - 插件管理页面（已完成）
 - `/logs` - 日志页面
-- `/settings` - 设置页面
+- `/settings` - 设置页面（新增 API 支持）
 
-### 状态管理
+### 前端架构优化
+
+#### 状态管理
 
 使用 [Zustand](https://github.com/pmndrs/zustand) 实现全局状态管理，包含：
 
 - Hook 配置状态管理
-- 插件状态管理
+- 插件状态管理（新增 loading 状态）
 - 主题状态管理（浅色、深色、系统主题）
 - 语言状态管理（中英文切换）
+- Toast 状态管理（通知系统）
 
-### 国际化
+#### 组件架构
+
+- **API 统一封装**: 所有网络请求封装在 `frontend/src/api/` 中
+- **组件复用**: 通用组件如 Button 提取为独立组件
+- **样式优化**: 加载状态的样式统一处理
+
+#### 国际化
 
 前端支持中英文国际化，通过自定义翻译 Hook 实现：
 
@@ -340,7 +357,15 @@ export type PluginConfig = {
 - 插件列表显示和编辑
 - 拖拽排序支持
 - 元数据编辑器
-- 脚本编辑器
+- 脚本编辑器（具备类型定义支持）
+- 加载状态显示优化
+
+#### 设置页面
+
+- 系统配置管理
+- 主题切换
+- 语言切换
+- API 配置管理
 
 ## 测试策略
 
@@ -358,7 +383,10 @@ cd frontend
 npm run build
 ```
 
-TODO: 添加单可执行文件构建流程及 Docker 镜像构建流程
+```bash
+# 构建完整项目
+npm run build
+```
 
 ### 部署步骤
 
@@ -373,25 +401,31 @@ TODO: 添加单可执行文件构建流程及 Docker 镜像构建流程
 PORT=5126 # 服务器端口（可选）
 RUNTIME=docker # Docker 运行环境标识
 DATABASE_URL=postgres://username:password@hostname:port/database # 数据库连接 URL，仅在 Docker 环境下需要配置
-AUTH_TOKEN=sk-123456 # 用于登录管理页面
+AUTH_TOKEN=sk-123456 # 用于登录管理页面（鉴权功能未完成）
 ```
+
+### Docker 部署优化
+
+- **包含迁移文件**: Dockerfile 已更新包含 drizzle 目录
+- **预连接数据库**: 启动时自动建立数据库连接
+- **单容器部署**: 支持完整的单容器部署方案
 
 ## 性能优化
 
 ### 后端优化
 
-- 使用 Hono 框架以获得高性能和低开销
-- 实现插件缓存策略以减少重复加载
-- 优化流式响应处理
-- 使用内存缓存提高插件加载性能
-- 异步插件安装避免阻塞事件循环
+- **框架选择**: 使用 Hono 框架获得高性能和低开销
+- **数据库优化**: 通过 `DatabaseOperator` 实现统一数据库操作优化
+- **缓存策略**: 实现多级缓存机制提高性能
+- **API 超时**: 新增 API 超时处理，防止长时间阻塞
+- **异步处理**: 插件依赖安装采用异步方式避免阻塞
 
 ### 插件系统优化
 
-- 支持插件预编译和缓存
-- 按需加载插件依赖
-- 运行时环境适配优化
-- 批量配置操作提高效率
+- **插件预编译**: 支持插件预编译和缓存
+- **按需加载**: 插件依赖按需安装
+- **批量操作**: 支持插件配置的批量处理
+- **缓存机制**: 多级缓存减少重复计算
 
 ## 安全考虑
 
@@ -401,25 +435,26 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 
 ### 插件安全
 
-- 插件无法直接读取用户的 API Key，防止第三方插件窃取用户数据
-- 异步依赖安装避免阻塞系统
-- 路径验证防止目录遍历攻击
+- **API Key 隔离**: 插件无法直接读取用户的 API Key，防止第三方插件窃取用户数据
+- **异步依赖安装**: 避免插件依赖安装阻塞主线程
+- **路径验证**: 防止目录遍历攻击
+- **脚本沙箱**: 插件脚本运行在受限环境中
 
 ## 监控和日志
 
 ### 应用监控
 
-- 使用 pino 进行日志记录
-- 集成错误追踪工具（如 Sentry）
-- 监控 API 请求和响应时间
-- 插件执行性能监控
+- **日志系统**: 使用 pino 进行结构化日志记录
+- **错误追踪**: 集成错误追踪工具（如 Sentry）
+- **性能监控**: 监控 API 请求和响应时间
+- **插件监控**: 插件执行性能和错误监控
 
 ### 日志管理
 
-- 日志级别包括：trace, debug, info, warn, error, fatal
-- 日志格式为 JSON，便于解析和分析
-- 日志存储策略：根据部署环境选择合适的存储方案
-- 插件执行日志记录
+- **日志级别**: 包括 trace, debug, info, warn, error, fatal
+- **日志格式**: pino 日志库默认的 JSON 格式
+- **存储策略**: 根据部署环境选择合适的存储方案
+- **查询功能**: 支持日志查询和过滤
 
 ## 常见问题
 
@@ -438,14 +473,31 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 2. 验证插件依赖是否正确安装
 3. 查看编译错误日志
 4. 确保运行时环境支持插件编译
+5. 验证插件类型定义是否正确
 
 ### 问题 3: 如何管理插件配置？
 
 **解决方案**:
-1. 使用 `PluginConfigController` 管理插件配置
+1. 使用 `PluginConfigController` 管理插件配置，支持批量操作
 2. 使用 `PluginInstanceController` 管理插件实例
 3. 通过 API 接口进行配置管理
 4. 支持批量操作和单个操作
+
+### 问题 4: Docker 部署时数据库连接失败？
+
+**解决方案**:
+1. 检查 DATABASE_URL 环境变量配置
+2. 验证数据库服务是否正常运行
+3. 检查网络连接和防火墙设置
+4. 查看容器日志获取详细错误信息
+
+### 问题 5: 前端构建失败如何处理？
+
+**解决方案**:
+1. 检查前端依赖是否完整安装
+2. 验证 TypeScript 类型定义
+3. 清理 node_modules 和 dist 目录后重新构建
+4. 检查 vite.config.ts 配置
 
 ## 参考资源
 
@@ -453,4 +505,6 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面
 - [Vercel AI SDK 文档](https://sdk.vercel.ai/docs)
 - [TypeScript 官方文档](https://www.typescriptlang.org/docs/)
 - [Drizzle ORM 文档](https://orm.drizzle.team/)
-- [live-plugin-manager 文档](https://github.com/sgenoni/live-plugin-manager)
+- [React 官方文档](https://reactjs.org/docs)
+- [TanStack Router 文档](https://tanstack.com/router/latest)
+- [Zustand 文档](https://docs.pmnd.rs/zustand)
