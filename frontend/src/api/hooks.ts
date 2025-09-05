@@ -1,18 +1,18 @@
-import type { PluginConfig } from '../../../common/types/config';
-import type { HookType } from '../../../common/types/hook';
-
-const API_BASE = '/api';
-const TIMEOUT = 5000;
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
+import type { PluginConfig } from '../../../common/types/config.ts';
+import type { HookType } from '../../../common/types/hook.ts';
 
 type HooksData = {
   pluginOrder: Record<HookType, string[]>;
   pluginConfigs: Record<string, PluginConfig>;
 };
 
+const hooksApiBase = `${API_BASE}/hooks`;
+
 export const hooksApi = {
   async getHooks(): Promise<HooksData> {
-    const response = await fetch(`${API_BASE}/hooks`, {
-      signal: AbortSignal.timeout(TIMEOUT),
+    const response = await fetch(hooksApiBase, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -22,9 +22,9 @@ export const hooksApi = {
   },
 
   async updateHooks(pluginOrder: HooksData['pluginOrder']): Promise<void> {
-    const response = await fetch(`${API_BASE}/hooks`, {
+    const response = await fetch(hooksApiBase, {
       method: 'PUT',
-      signal: AbortSignal.timeout(TIMEOUT),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },

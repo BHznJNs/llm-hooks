@@ -1,3 +1,5 @@
+type PromiseOr<T> = Promise<T> | T;
+
 export type Logger = {
   info: (message: string) => void;
   warn: (message: string) => void;
@@ -16,25 +18,27 @@ export type Plugin = Partial<{
   beforeUpstreamRequest: (
     args: PluginArguments<{
       requestParams: OpenAI.ChatCompletionRequest;
-      providerOptions: Record<string, unknown>;
+      providerOptions: AI_SDK_UTILS.ProviderOptions;
     }>
-  ) => {
+  ) => PromiseOr<{
     requestParams: OpenAI.ChatCompletionRequest;
-    providerOptions?: Record<string, unknown>;
-  };
+    providerOptions?: AI_SDK_UTILS.ProviderOptions;
+  } | null>;
   onUpstreamChunk: (
     args: PluginArguments<OpenAI.ChatCompletionResponseChunk>
-  ) => OpenAI.ChatCompletionResponseChunk | null;
+  ) => PromiseOr<OpenAI.ChatCompletionResponseChunk | null>;
   afterUpstreamResponse: (
     args: PluginArguments<OpenAI.ChatCompletionResponse | string>,
     isStream: boolean
-  ) =>
+  ) => PromiseOr<
     | OpenAI.ChatCompletionResponse
     | ReadableStream<
         | OpenAI.ChatCompletionResponseChunk
         | OpenAI.ChatCompletionResponseErrorChunk
-      >;
+      >
+    | null
+  >;
   onFetchModelList: (
     args: PluginArguments<OpenAI.ModelListResponse>
-  ) => OpenAI.ModelListResponse;
+  ) => PromiseOr<OpenAI.ModelListResponse | null>;
 }>;

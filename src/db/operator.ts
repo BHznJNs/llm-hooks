@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { AppConfig, PluginConfig } from '../../common/types/config.ts';
 import { type Database, db } from './index.ts';
 import { appConfigs, pluginConfigs, pluginScripts } from './schema.ts';
@@ -74,8 +74,8 @@ class DatabaseOperator {
       .onConflictDoUpdate({
         target: pluginConfigs.name,
         set: {
-          enabled: eq(pluginConfigs.enabled, true),
-          params: pluginConfigs.params,
+          enabled: pluginConfigs.enabled,
+          params: sql`EXCLUDED.params`,
         },
       });
   }

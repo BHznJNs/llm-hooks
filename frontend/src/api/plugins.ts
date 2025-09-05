@@ -1,12 +1,12 @@
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 import type { PluginConfig } from '../../../common/types/config.ts';
 
-const API_BASE = '/api/plugins';
-const TIMEOUT = 5000;
+const pluginsApiBase = `${API_BASE}/plugins`;
 
 export const pluginsApi = {
   async getAll(): Promise<Record<string, PluginConfig>> {
-    const response = await fetch(`${API_BASE}`, {
-      signal: AbortSignal.timeout(TIMEOUT),
+    const response = await fetch(pluginsApiBase, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -18,9 +18,9 @@ export const pluginsApi = {
 
   async getContent(pluginName: string): Promise<string> {
     const response = await fetch(
-      `${API_BASE}/content/${encodeURIComponent(pluginName)}`,
+      `${pluginsApiBase}/content/${encodeURIComponent(pluginName)}`,
       {
-        signal: AbortSignal.timeout(TIMEOUT),
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
         cache: 'no-store',
       }
     );
@@ -36,9 +36,9 @@ export const pluginsApi = {
     params: Record<string, unknown>;
     content?: string;
   }): Promise<void> {
-    const response = await fetch(`${API_BASE}`, {
+    const response = await fetch(`${pluginsApiBase}`, {
       method: 'POST',
-      signal: AbortSignal.timeout(TIMEOUT),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -54,9 +54,9 @@ export const pluginsApi = {
     params: Record<string, unknown>;
     content?: string;
   }): Promise<void> {
-    const response = await fetch(`${API_BASE}`, {
+    const response = await fetch(`${pluginsApiBase}`, {
       method: 'PUT',
-      signal: AbortSignal.timeout(TIMEOUT),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -69,10 +69,10 @@ export const pluginsApi = {
 
   async toggle(name: string, enabled: boolean): Promise<void> {
     const response = await fetch(
-      `${API_BASE}/toggle/${encodeURIComponent(name)}?enabled=${enabled}`,
+      `${pluginsApiBase}/toggle/${encodeURIComponent(name)}?enabled=${enabled}`,
       {
         method: 'PUT',
-        signal: AbortSignal.timeout(TIMEOUT),
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
       }
     );
     if (!response.ok) {
@@ -82,9 +82,9 @@ export const pluginsApi = {
 
   async has(pluginName: string): Promise<boolean> {
     const response = await fetch(
-      `${API_BASE}/has/${encodeURIComponent(pluginName)}`,
+      `${pluginsApiBase}/has/${encodeURIComponent(pluginName)}`,
       {
-        signal: AbortSignal.timeout(TIMEOUT),
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
         cache: 'no-store',
       }
     );
@@ -96,9 +96,9 @@ export const pluginsApi = {
   },
 
   async delete(name: string): Promise<void> {
-    const response = await fetch(`${API_BASE}`, {
+    const response = await fetch(`${pluginsApiBase}`, {
       method: 'DELETE',
-      signal: AbortSignal.timeout(TIMEOUT),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },

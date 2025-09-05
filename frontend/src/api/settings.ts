@@ -1,3 +1,4 @@
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 import type { LlmProvider } from '../../../common/types/config.ts';
 
 export type UpstreamConfig = {
@@ -17,13 +18,13 @@ export type SettingsResponse = {
   assistant: AssistantConfig;
 };
 
-const API_BASE = '/api';
-const TIMEOUT = 5000;
+const settingsApiBase = `${API_BASE}/settings`;
 
 export const settingsApi = {
   async getSettings(): Promise<SettingsResponse> {
-    const response = await fetch(`${API_BASE}/settings`, {
-      signal: AbortSignal.timeout(TIMEOUT),
+    const response = await fetch(settingsApiBase, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      cache: 'no-store',
     });
     if (!response.ok) {
       throw new Error(response.statusText);
@@ -32,9 +33,9 @@ export const settingsApi = {
   },
 
   async updateSettings(settings: SettingsResponse): Promise<void> {
-    const response = await fetch(`${API_BASE}/settings`, {
+    const response = await fetch(settingsApiBase, {
       method: 'PUT',
-      signal: AbortSignal.timeout(TIMEOUT),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },
