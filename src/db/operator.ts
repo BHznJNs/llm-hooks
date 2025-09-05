@@ -1,8 +1,9 @@
 import { eq, inArray, sql } from 'drizzle-orm';
 import type { AppConfig, PluginConfig } from '../../common/types/config.ts';
+import { logger } from '../utils/logger.ts';
+import { undefinedToNull } from '../utils/type-utils.ts';
 import { type Database, db } from './index.ts';
 import { appConfigs, pluginConfigs, pluginScripts } from './schema.ts';
-import { logger } from '../utils/logger.ts';
 
 class DatabaseOperator {
   private readonly db: Database;
@@ -71,9 +72,7 @@ class DatabaseOperator {
         ...config,
       })
     );
-    await this.db
-      .insert(pluginConfigs)
-      .values(dataToSave);
+    await this.db.insert(pluginConfigs).values(dataToSave);
   }
 
   async updatePluginConfig(name: string, partialConfig: Partial<PluginConfig>) {
@@ -99,36 +98,29 @@ class DatabaseOperator {
     const [row] = await this.db
       .insert(appConfigs)
       .values({
-        upstream: defaultConfig.upstream,
-        assistant: defaultConfig.assistant,
-        plugins: defaultConfig.plugins,
+        id: 1,
+        ...defaultConfig,
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: appConfigs.id,
+        set: { id: appConfigs.id },
+      })
       .returning({
         upstream: appConfigs.upstream,
         assistant: appConfigs.assistant,
         plugins: appConfigs.plugins,
       });
-    if (row) {
-      return row;
-    }
-    return (
-      (await this.db
-        .select({
-          upstream: appConfigs.upstream,
-          assistant: appConfigs.assistant,
-          plugins: appConfigs.plugins,
-        })
-        .from(appConfigs)
-        .limit(1)
-        .then((r) => r[0])) ?? null
-    );
+
+    return undefinedToNull(row);
   }
 
   async saveAppConfig(config: AppConfig) {
     await this.db
       .insert(appConfigs)
-      .values(config)
+      .values({
+        id: 1,
+        ...config,
+      })
       .onConflictDoUpdate({
         target: appConfigs.id,
         set: {
@@ -152,7 +144,7 @@ const proxy = new Proxy(operatorInstance, {
     if (typeof orig !== 'function') {
       return orig;
     }
-    return async (...args: any[]) => {
+    return async (...args: unknown[]) => {
       const start = performance.now();
       try {
         const result = await orig.apply(target, args);
@@ -162,7 +154,9 @@ const proxy = new Proxy(operatorInstance, {
       } finally {
         const end = performance.now();
         const duration = (end - start).toFixed(2);
-        moduleLogger.debug(`operation: "${String(prop)}", duration: ${duration}ms`);
+        moduleLogger.debug(
+          `operation: "${String(prop)}", duration: ${duration}ms`
+        );
       }
     };
   },

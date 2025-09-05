@@ -25,8 +25,9 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
   isLoading: false,
 
   fetchPlugins: async () => {
+    set({ isLoading: true });
     const pluginData = await pluginsApi.getAll();
-    set({ plugins: pluginData });
+    set({ plugins: pluginData, isLoading: false });
   },
 
   createPlugin: async (name, newPluginConfig) => {
