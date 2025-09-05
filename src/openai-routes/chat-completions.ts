@@ -62,7 +62,7 @@ export async function chatCompletionsRoute(c: Context) {
       stream
     );
 
-    if (processed?.collectedResponse) {
+    if (processed !== null) {
       await HooksHandler.afterUpstreamResponse(
         config,
         {
@@ -71,9 +71,6 @@ export async function chatCompletionsRoute(c: Context) {
         },
         isStream
       );
-    }
-
-    if (processed?.finishChunk) {
       await stream.writeSSE({ data: JSON.stringify(processed.finishChunk) });
     }
     await stream.writeSSE({ data: '[DONE]' });

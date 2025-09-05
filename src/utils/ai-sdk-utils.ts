@@ -208,7 +208,7 @@ export class AI_SDK_UTILS {
       case 'text-end': {
         return {
           ...chunkBase,
-          choices: [{ index: 0 as const, delta: {}, finish_reason: 'stop' }],
+          choices: [{ index: 0 as const, delta: {}, finish_reason: null }],
         };
       }
       case 'tool-input-start': {
@@ -317,7 +317,7 @@ export class AI_SDK_UTILS {
             {
               index: 0,
               delta: {},
-              finish_reason: finishReasonMap.get(chunk.finishReason) ?? null,
+              finish_reason: finishReasonMap.get(chunk.finishReason) ?? 'stop',
             },
           ],
           usage: {

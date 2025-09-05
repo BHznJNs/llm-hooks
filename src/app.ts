@@ -10,13 +10,14 @@ app.use('/*', cors());
 app.use('/*', serveStatic({ root: './dist-frontend' }));
 
 const serveIndexHtml = serveStatic({ path: './dist-frontend/index.html' });
-app.get('/', serveIndexHtml)
-   .get('/hooks', serveIndexHtml)
-   .get('/plugins', serveIndexHtml)
-   .get('/logs', serveIndexHtml)
-   .get('/settings', serveIndexHtml);
+app
+  .get('/', serveIndexHtml)
+  .get('/hooks', serveIndexHtml)
+  .get('/plugins', serveIndexHtml)
+  .get('/logs', serveIndexHtml)
+  .get('/settings', serveIndexHtml);
 
 app.route('/api', api);
-app.route('/openai', openAiApi);
+app.route('/v1', openAiApi);
 
 export default app;

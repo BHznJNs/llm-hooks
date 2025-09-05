@@ -144,6 +144,7 @@ export function EditPluginModal({
   const [pluginName, setPluginName] = useState('');
   const [pluginType, setPluginType] = useState<PluginType>('unknown');
   const [metadata, setMetadata] = useState<Record<string, unknown>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const scriptEditorRef = useRef<ScriptEditorHandle>(null);
   const confirmCallback = isEditMode ? onEditPlugin : onAddPlugin;
 
@@ -207,11 +208,13 @@ export function EditPluginModal({
       return;
     }
 
+    setIsSaving(true);
     await confirmCallback({
       name: pluginName,
       metadata,
       content: scriptEditorRef.current?.getValue() ?? '',
     });
+    setIsSaving(false);
     handleCloseClick();
   };
 
@@ -292,11 +295,19 @@ export function EditPluginModal({
           {/* Footer Buttons */}
           <div className="mt-6 flex justify-end gap-4">
             <DialogClose asChild>
-              <Button variant="secondary" onClick={handleCloseClick}>
+              <Button
+                variant="secondary"
+                disabled={isSaving}
+                onClick={handleCloseClick}
+              >
                 {t('cancel')}
               </Button>
             </DialogClose>
-            <Button variant="primary" onClick={handleConfirmClick}>
+            <Button
+              variant="primary"
+              disabled={isSaving}
+              onClick={handleConfirmClick}
+            >
               {t('confirm')}
             </Button>
           </div>
