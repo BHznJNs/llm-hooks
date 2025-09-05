@@ -33,4 +33,4 @@ COPY --from=frontend-builder /app/dist-frontend /app/dist-frontend
 COPY --from=backend-builder /app/dist-src /app/dist-src
 
 EXPOSE 5126
-CMD ["npm", "start"]
+CMD npm start

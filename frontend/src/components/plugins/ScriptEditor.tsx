@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noTsIgnore: <explanation> */
 import { Editor } from '@monaco-editor/react';
 import {
   editor as MonacoEditor,
@@ -13,13 +14,10 @@ import {
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import { useThemeStore } from '../../stores/theme-store';
-// biome-ignore lint/suspicious/noTsIgnore: <explanation>
 // @ts-ignore
 import AI_SDK_TYPE_DEFINITIONS from '../../types/ai-sdk.d.ts?raw';
-// biome-ignore lint/suspicious/noTsIgnore: <explanation>
 // @ts-ignore
 import OPENAI_TYPE_DEFINITIONS from '../../types/openai.d.ts?raw';
-// biome-ignore lint/suspicious/noTsIgnore: <explanation>
 // @ts-ignore
 import PLUGIN_TYPE_DEFINITIONS from '../../types/plugin.d.ts?raw';
 
@@ -27,6 +25,7 @@ export type ScriptEditorHandle = {
   getValue: () => string | undefined;
   setValue: (value: string) => void;
 };
+
 type ScriptEditorProps = {
   scriptType: 'javascript' | 'typescript';
 };
@@ -66,6 +65,7 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
     const [editorInitialValue, setEditorInitialValue] = useState(
       getDefaultContent(scriptType)
     );
+    const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
     const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor>(null);
     const editorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -79,9 +79,28 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
       },
     }));
 
+    // get current actual theme
     useEffect(() => {
-      MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
-    }, [theme]);
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const updateTheme = () => {
+        setActualTheme(mediaQuery.matches ? 'dark' : 'light');
+      };
+
+      updateTheme();
+      mediaQuery.addEventListener('change', updateTheme);
+
+      return () => {
+        mediaQuery.removeEventListener('change', updateTheme);
+      };
+    }, []);
+    useEffect(() => {
+      if (theme === 'system') {
+        MonacoEditor.setTheme(actualTheme === 'dark' ? 'vs-dark' : 'light');
+      } else {
+        MonacoEditor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
+      }
+    }, [theme, actualTheme]);
+    const editorTheme = theme === 'system' ? actualTheme : theme;
 
     function handleEditorBeforeMount(monaco: {
       languages: typeof MonacoLanguages;
@@ -101,7 +120,7 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
         target: monaco.languages.typescript.ScriptTarget.ES2020,
         allowNonTsExtensions: true,
         moduleResolution:
-          monaco.languages.typescript.ModuleResolutionKind.NodeJs, // ← 解决 2792
+          monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         allowSyntheticDefaultImports: true,
         module: monaco.languages.typescript.ModuleKind.ESNext,
         noEmit: true,
@@ -139,7 +158,7 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, ScriptEditorProps>(
         </div>
         <Editor
           height="50vh"
-          theme={theme === 'dark' ? 'vs-dark' : 'light'}
+          theme={editorTheme === 'dark' ? 'vs-dark' : 'light'}
           beforeMount={handleEditorBeforeMount}
           onMount={handleEditorDidMount}
           language={scriptType}

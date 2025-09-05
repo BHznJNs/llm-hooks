@@ -5,7 +5,6 @@ import { pluginsApi } from '../api/plugins.ts';
 export type PluginsState = {
   plugins: Record<string, PluginConfig>;
   isLoading: boolean;
-  error: string | null;
 
   // Actions
   fetchPlugins: () => Promise<void>;
@@ -24,7 +23,6 @@ export type PluginsState = {
 export const usePluginsStore = create<PluginsState>((set, get) => ({
   plugins: {},
   isLoading: false,
-  error: null,
 
   fetchPlugins: async () => {
     const pluginData = await pluginsApi.getAll();

@@ -14,6 +14,7 @@ export default function PluginsPage() {
   const { t } = useTranslation(language);
   const {
     plugins,
+    isLoading,
     fetchPlugins,
     deletePlugin,
     updatePlugin,
@@ -161,6 +162,7 @@ export default function PluginsPage() {
             size="medium"
             variant="primary"
             onClick={handleAddPluginClick}
+            disabled={isLoading}
           >
             <Plus size={16} />
             <span>{t('add-plugin')}</span>
@@ -176,7 +178,8 @@ export default function PluginsPage() {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder={t('search-plugins')}
-            className="w-full rounded-lg border border-gray-300 bg-white py-3 pr-4 pl-12 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600"
+            disabled={isLoading}
+            className={`w-full rounded-lg border border-gray-300 bg-white py-3 pr-4 pl-12 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600 ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
           />
         </div>
         <div className="relative">
@@ -184,21 +187,39 @@ export default function PluginsPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-3 pr-10 pl-12 text-gray-900 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-600"
+            disabled={isLoading}
+            className={`appearance-none rounded-lg border border-gray-300 bg-white py-3 pr-10 pl-12 text-gray-900 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-600 ${isLoading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
           >
             <option value="all">{t('all-status')}</option>
             <option value="enabled">{t('enabled')}</option>
             <option value="disabled">{t('disabled')}</option>
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <ChevronDown className="pointer-events-none h-5 w-5 text-gray-400" />
+          <div
+            className={`pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 ${isLoading ? '' : 'pointer-events-none'}`}
+          >
+            <ChevronDown className="h-5 w-5 text-gray-400" />
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {filteredPlugins.length > 0 ? (
-          filteredPlugins.map((plugin) => (
+        {(() => {
+          if (isLoading) {
+            return (
+              <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                <p className="text-lg">{t('loading')}</p>
+              </div>
+            );
+          }
+          if (filteredPlugins.length === 0) {
+            return (
+              <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                <p className="text-lg">{t('no-matching-plugins')}</p>
+                <p className="mt-2 text-sm">{t('adjust-search-filter')}</p>
+              </div>
+            );
+          }
+          return filteredPlugins.map((plugin) => (
             <PluginListItem
               key={plugin.name}
               name={plugin.name}
@@ -207,13 +228,8 @@ export default function PluginsPage() {
               onEdit={handleEditPluginClick}
               onDelete={handleDeletePluginClick}
             />
-          ))
-        ) : (
-          <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-            <p className="text-lg">{t('no-matching-plugins')}</p>
-            <p className="mt-2 text-sm">{t('adjust-search-filter')}</p>
-          </div>
-        )}
+          ));
+        })()}
       </div>
 
       <EditPluginModal
