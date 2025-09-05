@@ -27,6 +27,7 @@ ENV PORT=5126
 
 WORKDIR /app
 COPY package*.json ./
+COPY drizzle ./drizzle
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=frontend-builder /app/dist-frontend /app/dist-frontend
 COPY --from=backend-builder /app/dist-src /app/dist-src
