@@ -1,11 +1,13 @@
 import pino from 'pino';
+import pretty from 'pino-pretty';
 
 type PinoLogger = pino.Logger<never, boolean>;
 
 class Logger {
   private readonly _instance: PinoLogger;
   constructor() {
-    this._instance = pino({ level: 'debug' });
+    const stream = pretty({ colorize: true, destination: process.stdout });
+    this._instance = pino({ level: 'debug' }, stream);
   }
 
   get instance(): PinoLogger {

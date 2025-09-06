@@ -10,7 +10,7 @@ export default async function (tsFilePath: string): Promise<string | null> {
 
   const compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.NodeNext,
+    module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.NodeNext,
   };
   let compiledCode: string | null = null;
