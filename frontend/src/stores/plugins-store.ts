@@ -24,13 +24,13 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
   plugins: {},
   isLoading: false,
 
-  fetchPlugins: async () => {
+  async fetchPlugins() {
     set({ isLoading: true });
-    const pluginData = await pluginsApi.getAll();
+    const pluginData = await pluginsApi.fetchAll();
     set({ plugins: pluginData, isLoading: false });
   },
 
-  createPlugin: async (name, newPluginConfig) => {
+  async createPlugin(name, newPluginConfig) {
     const isExist = await pluginsApi.has(name);
     if (isExist) {
       throw new Error('Plugin already exists');
@@ -39,11 +39,21 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     await get().fetchPlugins();
   },
 
-  updatePlugin: async (name, newConfig) => {
+  async updatePlugin(name, newConfig) {
     await pluginsApi.update({ name, ...newConfig });
+    set((state) => ({
+      ...state,
+      plugins: {
+        ...state.plugins,
+        [name]: {
+          enabled: newConfig.enabled,
+          params: newConfig.params,
+        },
+      },
+    }));
   },
 
-  togglePlugin: async (name, enabled) => {
+  async togglePlugin(name, enabled) {
     await pluginsApi.toggle(name, enabled);
     set((state) => ({
       ...state,
@@ -54,7 +64,7 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     }));
   },
 
-  deletePlugin: async (name) => {
+  async deletePlugin(name) {
     await pluginsApi.delete(name);
     await get().fetchPlugins();
   },

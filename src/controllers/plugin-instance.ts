@@ -171,6 +171,7 @@ class PluginInstanceController {
       return;
     }
 
+    this.cache.delete(name); // force to refresh cache
     const plugin = await this.load(name);
     if (plugin === null) {
       this.logger.error(`Failed to load plugin after save: ${name}`);

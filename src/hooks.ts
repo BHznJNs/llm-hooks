@@ -74,7 +74,7 @@ export default class HooksHandler {
           data: finalResponse,
           logger: utils.logger,
           model: utils.model,
-          config: pluginConfig.params,
+          metadata: pluginConfig.params,
         });
         if (result !== null) {
           finalResponse = result;
@@ -103,7 +103,7 @@ export default class HooksHandler {
           data: { requestParams: finalRequest, providerOptions },
           logger: utils.logger,
           model: utils.model,
-          config: pluginConfig.params,
+          metadata: pluginConfig.params,
         });
         if (hookResult === null) {
           return;
@@ -134,7 +134,7 @@ export default class HooksHandler {
           data: finalChunk,
           logger: utils.logger,
           model: utils.model,
-          config: pluginConfig.params,
+          metadata: pluginConfig.params,
         });
         if (hookResult !== null) {
           finalChunk = hookResult;
@@ -162,7 +162,7 @@ export default class HooksHandler {
               data: finalResponse,
               logger: utils.logger,
               model: utils.model,
-              config: pluginConfig.params,
+              metadata: pluginConfig.params,
             },
             isStream
           );
@@ -187,7 +187,7 @@ export default class HooksHandler {
             data: tempResponse.collectedResponse,
             logger: utils.logger,
             model: utils.model,
-            config: pluginConfig.params,
+            metadata: pluginConfig.params,
           },
           isStream
         );

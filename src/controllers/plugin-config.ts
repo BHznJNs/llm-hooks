@@ -147,10 +147,10 @@ class PluginConfigController {
     try {
       switch (runtime) {
         case 'docker':
-          await this.saveForDocker(pluginConfigs);
+          await this.saveForDocker(filteredPluginConfigs);
           break;
         case 'local':
-          await this.saveForLocal(pluginConfigs);
+          await this.saveForLocal(filteredPluginConfigs);
           break;
         default:
           throw new Error(`Unsupported runtime: ${runtime}`);
@@ -159,8 +159,27 @@ class PluginConfigController {
       this.logger.error(`Failed to save plugin configs: ${error}`);
       return;
     }
-    for (const [name, config] of Object.entries(pluginConfigs)) {
+    for (const [name, config] of Object.entries(filteredPluginConfigs)) {
       this.cache.set(name, config);
+    }
+  }
+
+  async update(name: string, config: Partial<PluginConfig>): Promise<void> {
+    switch (runtime) {
+      case 'docker': {
+        const { default: dbOperator } = await import('../db/operator.ts');
+        await dbOperator.updatePluginConfig(name, config);
+        break;
+      }
+      case 'local': {
+        const currentConfig = (await this.loadForLocal([name]))[name];
+        if (!currentConfig) {
+          this.logger.error(`Failed to load plugin config: ${name}`);
+          return;
+        }
+        await this.saveBatch({ [name]: { ...currentConfig, ...config } });
+        break;
+      }
     }
   }
 
@@ -176,18 +195,6 @@ class PluginConfigController {
       default:
         throw new Error(`Unsupported runtime: ${runtime}`);
     }
-  }
-
-  async update(
-    name: string,
-    partialConfig: Partial<PluginConfig>
-  ): Promise<void> {
-    const config = await this.loadBatch([name]);
-    if (!config[name]) {
-      this.logger.error(`Failed to load plugin config: ${name}`);
-      return;
-    }
-    await this.saveBatch({ [name]: { ...config[name]!, ...partialConfig } });
   }
 
   async delete(name: string): Promise<void> {

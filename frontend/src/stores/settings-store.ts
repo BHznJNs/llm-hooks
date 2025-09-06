@@ -35,11 +35,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   isSaving: false,
   isLoading: false,
 
-  loadSettings: async () => {
+  async loadSettings() {
     set({ isLoading: true });
 
     try {
-      const data = await settingsApi.getSettings();
+      const data = await settingsApi.fetchSettings();
       set({
         upstream: data.upstream,
         assistant: data.assistant,
@@ -52,7 +52,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
-  saveSettings: async () => {
+  async saveSettings() {
     set({ isSaving: true });
 
     try {
@@ -67,14 +67,14 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
-  updateUpstream: (config) => {
+  updateUpstream(config) {
     set((state) => ({
       upstream: { ...state.upstream!, ...config },
       hasChanges: true,
     }));
   },
 
-  updateAssistant: (config) => {
+  updateAssistant(config) {
     set((state) => ({
       assistant: { ...state.assistant!, ...config },
       hasChanges: true,

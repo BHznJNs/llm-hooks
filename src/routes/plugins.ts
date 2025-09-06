@@ -1,5 +1,4 @@
 import { type Context, Hono } from 'hono';
-import type { HookType } from '../../common/types/hook.ts';
 import appConfigController from '../controllers/app-config.ts';
 import pluginConfigController from '../controllers/plugin-config.ts';
 import pluginInstanceController from '../controllers/plugin-instance.ts';
@@ -42,7 +41,7 @@ plugins.post('/', async (c: Context) => {
     params: Record<string, unknown>;
     content?: string;
   }>();
-  moduleLogger.info(`Creating plugin: ${name}`);
+  moduleLogger.info(`Creating plugin: "${name}"`);
   try {
     await Promise.all([
       pluginConfigController.saveBatch({
@@ -54,22 +53,11 @@ plugins.post('/', async (c: Context) => {
     throw new Error('Failed to save plugin');
   }
 
-  const [appConfig, plugin] = await Promise.allSettled([
-    appConfigController.load(),
-    pluginInstanceController.load(name),
-  ]);
-  if (appConfig.status === 'rejected' || plugin.status === 'rejected') {
-    throw new Error('Failed to load app config or plugin');
+  const plugin = await pluginInstanceController.load(name);
+  if (!plugin) {
+    throw new Error('Failed to load plugin after save');
   }
-
-  const pluginOrderData = appConfig.value!.plugins;
-  for (const hookName of Object.keys(plugin.value!) as HookType[]) {
-    if (pluginOrderData[hookName].includes(name)) {
-      continue;
-    }
-    pluginOrderData[hookName].push(name);
-  }
-  await appConfigController.update({ plugins: pluginOrderData });
+  await appConfigController.appendPluginRecord(name, plugin);
   return c.json(null);
 });
 
@@ -81,14 +69,13 @@ plugins.put('/toggle/:plugin_name', async (c: Context) => {
 });
 
 plugins.put('/', async (c: Context) => {
-  const { name, enabled, params, content } = await c.req.json<{
+  const { name, params, content } = await c.req.json<{
     name: string;
-    enabled: boolean;
     params: Record<string, unknown>;
     content?: string;
   }>();
   await Promise.all([
-    pluginConfigController.update(name, { enabled, params }),
+    pluginConfigController.update(name, { params }),
     pluginInstanceController.save(name, content),
   ]);
   return c.json(null);

@@ -9,7 +9,8 @@ CREATE TABLE "plugin_configs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
-	"params" jsonb DEFAULT '{}'::jsonb NOT NULL
+	"params" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	CONSTRAINT "plugin_configs_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 CREATE TABLE "plugin_scripts" (

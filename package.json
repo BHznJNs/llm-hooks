@@ -11,8 +11,8 @@
     "start:docker": "node --env-file .env.docker dist-src/index.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "tsx watch --env-file .env src/index.ts",
-    "dev:docker": "tsx watch --env-file .env.docker src/index.ts",
+    "dev:backend": "tsx --env-file .env src/index.ts",
+    "dev:docker": "tsx --env-file .env.docker src/index.ts",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "node scripts/build-backend.js",
     "check": "biome check .",
@@ -35,7 +35,7 @@
     "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
+    "@biomejs/biome": "^2.2.2",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
     "concurrently": "^9.2.1",
@@ -43,6 +43,6 @@
     "esbuild": "^0.25.9",
     "esbuild-node-externals": "^1.18.0",
     "tsx": "^4.20.4",
-    "ultracite": "^5.2.3"
+    "ultracite": "^5.3.3"
   }
 }

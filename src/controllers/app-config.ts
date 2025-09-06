@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { AppConfig } from '../../common/types/config.ts';
 import type { HookType } from '../../common/types/hook.ts';
+import type { Plugin } from '../types/plugin.ts';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 
@@ -110,6 +111,23 @@ class AppConfigController {
       return;
     }
     await this.save({ ...config, ...partialConfig });
+  }
+
+  async appendPluginRecord(
+    pluginName: string,
+    pluginInstance: Plugin
+  ): Promise<void> {
+    const config = await this.load();
+    if (!config) {
+      this.logger.error('Failed to load app configuration');
+      return;
+    }
+    for (const hookName of Object.keys(pluginInstance) as HookType[]) {
+      if (!config.plugins[hookName].includes(pluginName)) {
+        config.plugins[hookName].push(pluginName);
+      }
+    }
+    await this.save(config);
   }
 
   async deletePluginRecord(pluginName: string): Promise<void> {

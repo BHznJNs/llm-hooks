@@ -72,7 +72,16 @@ class DatabaseOperator {
         ...config,
       })
     );
-    await this.db.insert(pluginConfigs).values(dataToSave);
+    await this.db
+      .insert(pluginConfigs)
+      .values(dataToSave)
+      .onConflictDoUpdate({
+        target: pluginConfigs.name,
+        set: {
+          enabled: sql`EXCLUDED.enabled`,
+          params: sql`EXCLUDED.params`,
+        },
+      });
   }
 
   async updatePluginConfig(name: string, partialConfig: Partial<PluginConfig>) {

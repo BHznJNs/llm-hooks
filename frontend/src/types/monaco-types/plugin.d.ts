@@ -11,7 +11,7 @@ export type PluginArguments<T> = {
   data: T;
   logger: Logger;
   model: LlmModel;
-  config: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 };
 
 export type Plugin = Partial<{

@@ -17,13 +17,13 @@ type ToastStore = {
 
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  showToast: (message: string, type: ToastType) => {
+  showToast(message: string, type: ToastType) {
     const id = Date.now().toString();
     set((state) => ({
       toasts: [...state.toasts, { id, message, type, open: true }],
     }));
   },
-  hideToast: (id: string) => {
+  hideToast(id: string) {
     set((state) => ({
       toasts: state.toasts.map((toast) =>
         toast.id === id ? { ...toast, open: false } : toast

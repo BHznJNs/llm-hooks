@@ -33,7 +33,7 @@ export const appConfigs = pgTable('app_configs', {
 
 export const pluginConfigs = pgTable('plugin_configs', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
+  name: text('name').notNull().unique(),
   enabled: boolean('enabled').notNull().default(true),
   params: jsonb('params').notNull().default({}),
 });

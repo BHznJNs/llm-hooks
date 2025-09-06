@@ -15,11 +15,11 @@ import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import { useThemeStore } from '../../stores/theme-store';
 // @ts-ignore
-import AI_SDK_TYPE_DEFINITIONS from '../../types/ai-sdk.d.ts?raw';
+import AI_SDK_TYPE_DEFINITIONS from '../../types/monaco-types/ai-sdk.d.ts?raw';
 // @ts-ignore
-import OPENAI_TYPE_DEFINITIONS from '../../types/openai.d.ts?raw';
+import OPENAI_TYPE_DEFINITIONS from '../../types/monaco-types/openai.d.ts?raw';
 // @ts-ignore
-import PLUGIN_TYPE_DEFINITIONS from '../../types/plugin.d.ts?raw';
+import PLUGIN_TYPE_DEFINITIONS from '../../types/monaco-types/plugin.d.ts?raw';
 
 export type ScriptEditorHandle = {
   getValue: () => string | undefined;

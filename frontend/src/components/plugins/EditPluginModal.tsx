@@ -164,7 +164,7 @@ export function EditPluginModal({
     setPluginType(getPluginType(editingConfig.name));
     setMetadata(editingConfig.params);
     pluginsApi
-      .getContent(editingConfig.name)
+      .fetchContent(editingConfig.name)
       .then((content: string) => {
         scriptEditorRef.current?.setValue(content);
       })

@@ -1,0 +1,1 @@
+All the type declaration files in this directory are all only used in the monaco editor.

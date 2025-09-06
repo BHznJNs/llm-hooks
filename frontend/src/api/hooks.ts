@@ -1,6 +1,6 @@
-import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 import type { PluginConfig } from '../../../common/types/config.ts';
 import type { HookType } from '../../../common/types/hook.ts';
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 
 type HooksData = {
   pluginOrder: Record<HookType, string[]>;
@@ -10,7 +10,7 @@ type HooksData = {
 const hooksApiBase = `${API_BASE}/hooks`;
 
 export const hooksApi = {
-  async getHooks(): Promise<HooksData> {
+  async fetchHooks(): Promise<HooksData> {
     const response = await fetch(hooksApiBase, {
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
       cache: 'no-store',

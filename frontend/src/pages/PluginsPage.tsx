@@ -105,7 +105,7 @@ export default function PluginsPage() {
     try {
       await createPlugin(newPlugin.name, {
         enabled: true,
-        params: {},
+        params: newPlugin.metadata,
         content: newPlugin.content,
       });
     } catch (error) {

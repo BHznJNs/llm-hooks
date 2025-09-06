@@ -1,10 +1,10 @@
-import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 import type { PluginConfig } from '../../../common/types/config.ts';
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 
 const pluginsApiBase = `${API_BASE}/plugins`;
 
 export const pluginsApi = {
-  async getAll(): Promise<Record<string, PluginConfig>> {
+  async fetchAll(): Promise<Record<string, PluginConfig>> {
     const response = await fetch(pluginsApiBase, {
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
       cache: 'no-store',
@@ -16,7 +16,7 @@ export const pluginsApi = {
     return data.plugins;
   },
 
-  async getContent(pluginName: string): Promise<string> {
+  async fetchContent(pluginName: string): Promise<string> {
     const response = await fetch(
       `${pluginsApiBase}/content/${encodeURIComponent(pluginName)}`,
       {

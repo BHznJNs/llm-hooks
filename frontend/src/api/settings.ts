@@ -1,5 +1,5 @@
-import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 import type { LlmProvider } from '../../../common/types/config.ts';
+import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 
 export type UpstreamConfig = {
   baseUrl: string;
@@ -21,7 +21,7 @@ export type SettingsResponse = {
 const settingsApiBase = `${API_BASE}/settings`;
 
 export const settingsApi = {
-  async getSettings(): Promise<SettingsResponse> {
+  async fetchSettings(): Promise<SettingsResponse> {
     const response = await fetch(settingsApiBase, {
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
       cache: 'no-store',
