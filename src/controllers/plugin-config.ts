@@ -103,7 +103,10 @@ class PluginConfigController {
   async loadBatch(
     pluginNames: string[]
   ): Promise<Record<string, PluginConfig>> {
-    const pluginsNotInCache = pluginNames.filter((k) => !this.cache.has(k));
+    const uniquePluginNames = Array.from(new Set(pluginNames));
+    const pluginsNotInCache = uniquePluginNames.filter(
+      (k) => !this.cache.has(k)
+    );
 
     if (pluginsNotInCache.length > 0) {
       let newConfigs: Record<string, PluginConfig> = {};
