@@ -5,9 +5,8 @@ category: "后端服务"
 author: "BHznJNs"
 authorUrl: "https://github.com/BHznJNs"
 tags: ["TypeScript", "Hono", "LLM", "OpenAI", "Google", "Anthropic", "AI Gateway"]
-lastUpdated: "2025-09-05"
+lastUpdated: "2025-09-07"
 ---
-
 # llm-hooks
 
 ## 项目概述
@@ -22,11 +21,10 @@ llm-hooks 是一个面向个人用户的 AI 智能网关，旨在为用户提供
 
 - **后端框架**: [Hono](https://hono.dev/) - 轻量级 Web 框架，支持多种运行环境
 - **语言**: TypeScript - 提供类型安全和更好的开发体验
-- **LLM SDK**: [@ai-sdk/*](https://sdk.vercel.ai/docs) - 用于与各种 LLM 提供商交互的 SDK
+- **Hook SDK**: [llm-hooks-sdk](https://github.com/BHznJNs/llm-hooks-sdk) - 用于支撑项目中 hook 机制的实现，插件开发也基于此 SDK
 - **日志记录**: [pino](https://getpino.io/) - 快速、低开销的日志记录库
 - **代码质量**: [biome](https://biomejs.dev/) - 代码格式化和 linting 工具
 - **数据库 ORM**: [Drizzle ORM](https://orm.drizzle.team/)
-
 ### 前端技术栈
 
 - **前端框架**: [React](https://reactjs.org/) - 用于构建用户界面的 JavaScript 库
@@ -185,7 +183,7 @@ npm run dev
 
 1. **控制器层** (`src/controllers/`): 负责业务逻辑处理
    - `AppConfigController`: 应用配置管理，优化了数据库存储
-   - `PluginConfigController`: 插件配置管理，支持批量操作
+   - `PluginConfigController`: 插件配置管理，支持批量操作和单个更新
    - `PluginInstanceController`: 插件实例管理，负责插件的加载和卸载
    - `ScriptController`: 脚本控制器，负责脚本文件的保存和管理
 
@@ -193,14 +191,17 @@ npm run dev
    - `DatabaseOperator`: 数据库操作统一代理，提供统一的数据库访问接口
    - 数据库连接和模式定义
    - 预连接数据库机制优化 Docker 部署性能
+   - 支持数据库操作的性能监控和日志记录
 
 3. **路由层** (`src/routes/`, `src/openai-routes/`): 处理 HTTP 请求
    - API 路由统一管理
    - OpenAI 兼容路由分离
    - 支持 API 超时处理机制
+   - 支持请求 ID 生成和追踪
 
 4. **工具层** (`src/utils/`): 提供通用工具函数
-
+   - 集成 llm-hooks-sdk 提供的 AI SDK 工具函数
+   - 移除了对 @ai-sdk/* 依赖包的直接依赖
 ### 数据持久化架构进化
 
 #### 本地运行
@@ -225,6 +226,22 @@ npm run dev
 - `onUpstreamChunk` - 上游数据流处理
 - `afterUpstreamResponse` - 上游响应后处理
 - `onFetchModelList` - 模型列表获取后处理
+
+### 数据持久化架构进化
+
+#### 本地运行
+
+保持原有方式，将应用配置、插件脚本和通过 npm 安装的插件放在用户的数据目录下，在运行时直接通过绝对路径加载配置及插件。
+
+#### Docker 部署
+
+实现完整的数据库持久化方案：
+
+- **统一操作接口**: 通过 `DatabaseOperator` 类统一管理数据库操作
+- **预连接优化**: Docker 环境下预连接数据库，提高启动性能
+- **脚本持久化**: 插件脚本内容直接存入数据库，无需文件系统依赖
+- **迁移支持**: 使用 drizzle ORM 提供完整的数据库迁移功能
+- **配置缓存**: 数据库操作结果缓存提高性能
 
 ### 插件系统
 
@@ -272,7 +289,7 @@ export type PluginConfig = {
 
 #### AI SDK 工具 (`src/utils/ai-sdk-utils.ts`)
 
-提供 AI SDK 相关的工具函数，包括请求参数工厂、响应工厂和流式数据编码。
+提供 AI SDK 相关的工具函数，包括请求参数工厂、响应工厂和流式数据编码。该工具集成了 `llm-hooks-sdk` 和 Vercel AI SDK 的功能。
 
 #### 字段处理工具 (`src/utils/field-utils.ts`)
 
@@ -367,43 +384,6 @@ export type PluginConfig = {
 - 语言切换
 - API 配置管理
 
-## 测试策略
-
-项目目前没有添加测试相关的开发依赖和测试脚本。
-
-## 部署指南
-
-### 构建过程
-
-```bash
-# 1. 进入前端目录
-cd frontend
-
-# 2. 构建前端项目
-npm run build
-```
-
-```bash
-# 构建完整项目
-npm run build
-```
-
-### 部署步骤
-
-1. 准备生产环境 (Node.js)
-2. 配置环境变量
-3. 执行部署脚本
-4. 验证部署结果
-
-### 环境变量
-
-```env
-PORT=5126 # 服务器端口（可选）
-RUNTIME=docker # Docker 运行环境标识
-DATABASE_URL=postgres://username:password@hostname:port/database # 数据库连接 URL，仅在 Docker 环境下需要配置
-AUTH_TOKEN=sk-123456 # 用于登录管理页面（鉴权功能未完成）
-```
-
 ### Docker 部署优化
 
 - **包含迁移文件**: Dockerfile 已更新包含 drizzle 目录
@@ -462,8 +442,8 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面（鉴权功能未完成）
 
 **解决方案**:
 1. 检查 TypeScript 语法错误
-2. 验证插件依赖是否正确安装
-3. 查看编译错误日志
+2. 确保插件依赖已正确安装
+3. 检查插件类型定义是否正确
 4. 确保运行时环境支持插件编译
 5. 验证插件类型定义是否正确
 
@@ -471,15 +451,14 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面（鉴权功能未完成）
 
 **解决方案**:
 1. 使用 `PluginConfigController` 管理插件配置，支持批量操作
-2. 使用 `PluginInstanceController` 管理插件实例
-3. 通过 API 接口进行配置管理
-4. 支持批量操作和单个操作
+2. 通过 API 接口进行配置管理
+3. 支持批量操作和单个操作
 
 ### 问题 3: Docker 部署时数据库连接失败？
 
 **解决方案**:
 1. 检查 DATABASE_URL 环境变量配置
-2. 验证数据库服务是否正常运行
+2. 确保数据库服务正常运行
 3. 检查网络连接和防火墙设置
 4. 查看容器日志获取详细错误信息
 
@@ -487,9 +466,9 @@ AUTH_TOKEN=sk-123456 # 用于登录管理页面（鉴权功能未完成）
 
 **解决方案**:
 1. 检查前端依赖是否完整安装
-2. 验证 TypeScript 类型定义
-3. 清理 node_modules 和 dist 目录后重新构建
-4. 检查 vite.config.ts 配置
+2. 确保 Node.js 版本符合要求
+3. 清理构建缓存后重新构建
+4. 检查网络连接是否正常
 
 ## 参考资源
 
