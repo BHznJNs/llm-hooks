@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PluginConfig } from '../../../../common/types/config';
 import { pluginsApi } from '../../api/plugins';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
 import { useToastStore } from '../../stores/toast-store';
@@ -248,27 +249,27 @@ export function EditPluginModal({
                 <label htmlFor="plugin-name" className="sr-only">
                   {t('plugin-name-placeholder')}
                 </label>
-                <input
+                <Input
                   id="plugin-name"
                   type="text"
                   placeholder={t('plugin-name-placeholder')}
                   value={pluginName}
                   onChange={(e) => setPluginName(e.target.value.trim())}
                   disabled={isEditMode}
-                  className={`w-full rounded border border-gray-300 px-3 py-2 pr-10 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-600 ${
-                    isEditMode ? 'cursor-not-allowed' : ''
-                  }`}
+                  variant="normal"
+                  suffix={
+                    !isEditMode && pluginName ? (
+                      <button
+                        type="button"
+                        onClick={() => setPluginName('')}
+                        className="cursor-pointer"
+                        aria-label={t('clear-plugin-name')}
+                      >
+                        <X size={18} />
+                      </button>
+                    ) : null
+                  }
                 />
-                {!isEditMode && pluginName && (
-                  <button
-                    type="button"
-                    onClick={() => setPluginName('')}
-                    className="-translate-y-1/2 absolute top-1/2 right-3 cursor-pointer"
-                    aria-label="清除插件名称"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
               </div>
             </div>
 

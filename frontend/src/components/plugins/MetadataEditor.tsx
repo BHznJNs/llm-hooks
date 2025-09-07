@@ -1,7 +1,9 @@
 import { Check, Edit3, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { useTranslation } from '../../lib/i18n';
+import { useLanguageStore } from '../../stores/language-store';
 
 type MetadataEditorProps = {
   metadata: Record<string, unknown>;
@@ -16,7 +18,8 @@ type MetadataEntry = {
 };
 
 export function MetadataEditor({ metadata, onChange }: MetadataEditorProps) {
-  const { t } = useTranslation('en');
+  const { language } = useLanguageStore();
+  const { t } = useTranslation(language);
   const [entries, setEntries] = useState<MetadataEntry[]>(() =>
     Object.entries(metadata).map(([key, value], index) => ({
       key,
@@ -112,19 +115,19 @@ export function MetadataEditor({ metadata, onChange }: MetadataEditorProps) {
 
       {/* Add new metadata entry */}
       <div className="flex gap-2 rounded border border-gray-300 border-dashed p-3 dark:border-gray-600">
-        <input
+        <Input
           type="text"
           placeholder={t('metadata-key-placeholder')}
           value={newKey}
           onChange={(e) => setNewKey(e.target.value)}
-          className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+          variant="small"
         />
-        <input
+        <Input
           type="text"
           placeholder={t('metadata-value-placeholder')}
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+          variant="small"
         />
         <Button
           size="small"
@@ -172,17 +175,17 @@ function MetadataEntryRow({
   if (entry.isEditing) {
     return (
       <div className="flex gap-2 rounded border border-gray-300 bg-blue-50 p-3 dark:border-gray-600 dark:bg-gray-800">
-        <input
+        <Input
           type="text"
           value={editKey}
           onChange={(e) => setEditKey(e.target.value)}
-          className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+          variant="small"
         />
-        <input
+        <Input
           type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+          variant="small"
         />
         <Button size="small" variant="primary" onClick={handleSave}>
           <Check />

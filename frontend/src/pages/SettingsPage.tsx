@@ -4,6 +4,7 @@ import { FormField } from '../components/settings/FormField';
 import { PasswordField } from '../components/settings/PasswordField';
 import { ProviderSelect } from '../components/settings/ProviderSelect';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { useSettingsStore } from '../stores/settings-store';
@@ -100,14 +101,14 @@ export default function SettingsPage() {
           required
           htmlFor="upstream-base-url"
         >
-          <input
+          <Input
             type="url"
             id="upstream-base-url"
             value={upstream!.baseUrl}
             onChange={(e) => updateUpstream({ baseUrl: e.target.value })}
             placeholder="https://api.openai.com/v1"
             required
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600"
+            variant="normal"
           />
         </FormField>
         <FormField label={t('provider')} required htmlFor="upstream-provider">
@@ -134,14 +135,14 @@ export default function SettingsPage() {
           required
           htmlFor="assistant-base-url"
         >
-          <input
+          <Input
             type="url"
             id="assistant-base-url"
             value={assistant!.baseUrl}
             onChange={(e) => updateAssistant({ baseUrl: e.target.value })}
             placeholder="https://api.openai.com/v1"
             required
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600"
+            variant="normal"
           />
         </FormField>
         <FormField label={t('provider')} required htmlFor="assistant-provider">
@@ -158,13 +159,13 @@ export default function SettingsPage() {
           required
           htmlFor="assistant-model"
         >
-          <input
+          <Input
             type="text"
             id="assistant-model"
             value={assistant!.model}
             onChange={(e) => updateAssistant({ model: e.target.value })}
             required
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600"
+            variant="normal"
           />
         </FormField>
         <FormField

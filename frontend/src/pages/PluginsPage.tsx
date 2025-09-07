@@ -4,6 +4,7 @@ import type { PluginConfig } from '../../../common/types/config';
 import { EditPluginModal } from '../components/plugins/EditPluginModal';
 import { PluginListItem } from '../components/plugins/PluginListItem';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { usePluginsStore } from '../stores/plugins-store';
@@ -172,14 +173,12 @@ export default function PluginsPage() {
 
       <div className="mb-6 flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="-translate-y-1/2 absolute top-1/2 left-4 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
+          <Input
             value={searchText}
+            disabled={isLoading}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder={t('search-plugins')}
-            disabled={isLoading}
-            className={`w-full rounded-lg border border-gray-300 bg-white py-3 pr-4 pl-12 text-gray-900 placeholder-gray-500 shadow-input transition duration-300 focus:border-transparent focus:outline-none focus:ring-4 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-600 ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
+            prefix={<Search className="h-5 w-5 opacity-75" />}
           />
         </div>
         <div className="relative">
