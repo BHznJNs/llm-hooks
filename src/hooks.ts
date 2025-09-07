@@ -1,11 +1,15 @@
 import type { SSEStreamingApi } from 'hono/streaming';
+import {
+  type LlmModel,
+  llmClientFactory,
+  type OpenAI,
+  type Plugin,
+} from 'llm-hooks-sdk';
 import type { Logger } from 'pino';
 import type { AppConfig, PluginConfig } from '../common/types/config.ts';
 import pluginConfigController from './controllers/plugin-config.ts';
 import pluginInstanceController from './controllers/plugin-instance.ts';
-import type { Plugin } from './types/plugin.ts';
 import { AI_SDK_UTILS } from './utils/ai-sdk-utils.ts';
-import { type LlmModel, llmClientFactory } from './utils/llm-client-factory.ts';
 import { logger } from './utils/logger.ts';
 import { responseStreamProcessor } from './utils/stream-utils.ts';
 
@@ -86,6 +90,7 @@ export default class HooksHandler {
 
   static async beforeUpstreamRequest(
     config: AppConfig,
+    chatId: string,
     chatCompletionRequest: OpenAI.ChatCompletionRequest
   ): Promise<{
     requestParams: OpenAI.ChatCompletionRequest;
@@ -101,6 +106,7 @@ export default class HooksHandler {
       async (plugin, pluginConfig, utils) => {
         const hookResult = await plugin.beforeUpstreamRequest!({
           data: { requestParams: finalRequest, providerOptions },
+          chatId,
           logger: utils.logger,
           model: utils.model,
           metadata: pluginConfig.params,
@@ -123,6 +129,7 @@ export default class HooksHandler {
 
   static async onUpstreamChunk(
     config: AppConfig,
+    chatId: string,
     chunk: OpenAI.ChatCompletionResponseChunk
   ): Promise<OpenAI.ChatCompletionResponseChunk | null> {
     let finalChunk = chunk;
@@ -132,6 +139,7 @@ export default class HooksHandler {
       async (plugin, pluginConfig, utils) => {
         const hookResult = await plugin.onUpstreamChunk!({
           data: finalChunk,
+          chatId,
           logger: utils.logger,
           model: utils.model,
           metadata: pluginConfig.params,
@@ -146,6 +154,7 @@ export default class HooksHandler {
 
   static async afterUpstreamResponse(
     config: AppConfig,
+    chatId: string,
     response:
       | OpenAI.ChatCompletionResponse
       | { collectedResponse: string; stream: SSEStreamingApi },
@@ -160,6 +169,7 @@ export default class HooksHandler {
           const hookResult = await plugin.afterUpstreamResponse!(
             {
               data: finalResponse,
+              chatId,
               logger: utils.logger,
               model: utils.model,
               metadata: pluginConfig.params,
@@ -185,6 +195,7 @@ export default class HooksHandler {
         const hookResult = await plugin.afterUpstreamResponse!(
           {
             data: tempResponse.collectedResponse,
+            chatId,
             logger: utils.logger,
             model: utils.model,
             metadata: pluginConfig.params,
@@ -196,6 +207,7 @@ export default class HooksHandler {
         }
         const processed = await responseStreamProcessor(
           config,
+          chatId,
           hookResult as ReadableStream<
             | OpenAI.ChatCompletionResponseChunk
             | OpenAI.ChatCompletionResponseErrorChunk

@@ -2,38 +2,25 @@
  * biome-ignore-all lint/complexity/noBannedTypes: For conveniently pass TOOLS type parameter into the AI SDK methods
  */
 
-import { randomUUID } from 'node:crypto';
 import {
   type CallSettings,
-  type FinishReason,
-  type GenerateTextResult,
   type JSONValue,
   jsonSchema,
   type LanguageModel,
   type ModelMessage,
   type Prompt,
   type StopCondition,
-  type StreamTextResult,
-  type TextStreamPart,
   type ToolChoice,
   type ToolSet,
   tool,
 } from 'ai';
-import type { llmClientFactory } from './llm-client-factory.ts';
+import {
+  aiSdkChunkToOpenAI,
+  aiSdkNonStreamResponseToOpenAI,
+  aiSdkStreamToOpenAI,
+  type LlmClient,
+} from 'llm-hooks-sdk';
 import { nullToUndefined } from './type-utils.ts';
-
-const finishReasonMap = new Map<
-  FinishReason,
-  OpenAI.ChatCompletionFinishReason
->([
-  ['stop', 'stop'],
-  ['length', 'length'],
-  ['content-filter', 'content_filter'],
-  ['tool-calls', 'tool_calls'],
-  ['error', null],
-  ['other', null],
-  ['unknown', null],
-]);
 
 // biome-ignore lint/style/noNamespace: <explanation>
 export declare namespace AI_SDK_UTILS {
@@ -68,7 +55,7 @@ export class AI_SDK_UTILS {
   }
 
   static chatCompletionRequestParamsFactory(
-    client: ReturnType<typeof llmClientFactory>,
+    client: LlmClient,
     openAiRequestParams: OpenAI.ChatCompletionRequest,
     providerOptions: AI_SDK_UTILS.ProviderOptions
   ): [boolean, AI_SDK_UTILS.ChatCompletionRequest<{}>] {
@@ -122,283 +109,8 @@ export class AI_SDK_UTILS {
     ];
   }
 
-  static chatCompletionChunkProcessor(
-    chunk: TextStreamPart<{}>,
-    chatId: string,
-    model: string
-  ):
-    | OpenAI.ChatCompletionResponseChunk
-    | OpenAI.ChatCompletionResponseErrorChunk
-    | null {
-    const SECOND = 1000;
-    const created = Math.floor(Date.now() / SECOND);
-    const chunkBase = {
-      id: chatId,
-      created,
-      model,
-      object: 'chat.completion.chunk',
-    } satisfies Partial<
-      | OpenAI.ChatCompletionResponseChunk
-      | OpenAI.ChatCompletionResponseErrorChunk
-    >;
-    switch (chunk.type) {
-      case 'reasoning-start': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: { role: 'assistant', content: '' },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'reasoning-delta': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: {
-                reasoning_content: chunk.text,
-                content: '',
-              },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'reasoning-end': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: { reasoning_content: '', content: '' },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'text-start': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: { role: 'assistant', content: '' },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'text-delta': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: { content: chunk.text },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'text-end': {
-        return {
-          ...chunkBase,
-          choices: [{ index: 0 as const, delta: {}, finish_reason: null }],
-        };
-      }
-      case 'tool-input-start': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: {
-                role: 'assistant',
-                content: '',
-                tool_calls: [
-                  {
-                    index: 0,
-                    type: 'function',
-                    id: chunk.id,
-                    function: {
-                      name: chunk.toolName,
-                    },
-                  },
-                ],
-              },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'tool-input-delta': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: {
-                tool_calls: [
-                  {
-                    index: 0,
-                    function: {
-                      arguments: chunk.delta,
-                    },
-                  },
-                ],
-              },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'tool-input-end': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: {},
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'tool-call': {
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0 as const,
-              delta: {
-                tool_calls: [
-                  {
-                    index: 0,
-                    type: 'function',
-                    id: chunk.toolCallId,
-                    function: {
-                      name: chunk.toolName,
-                      arguments: chunk.input as string,
-                    },
-                  },
-                ],
-              },
-              finish_reason: null,
-            },
-          ],
-        };
-      }
-      case 'error': {
-        const errorMessage: string =
-          typeof chunk.error === 'object' &&
-          chunk.error !== null &&
-          'message' in chunk.error
-            ? (chunk.error.message as string)
-            : JSON.stringify(chunk.error);
-        return {
-          ...chunkBase,
-          choices: [{ index: 0 as const, delta: {}, finish_reason: 'stop' }],
-          error: {
-            message: errorMessage,
-            type: 'upstream_error',
-          },
-        };
-      }
-      case 'finish': {
-        const aiSdkUsageData = chunk.totalUsage;
-        return {
-          ...chunkBase,
-          choices: [
-            {
-              index: 0,
-              delta: {},
-              finish_reason: finishReasonMap.get(chunk.finishReason) ?? 'stop',
-            },
-          ],
-          usage: {
-            prompt_tokens: aiSdkUsageData.inputTokens ?? 0,
-            completion_tokens: aiSdkUsageData.outputTokens ?? 0,
-            total_tokens: aiSdkUsageData.totalTokens ?? 0,
-          },
-        };
-      }
-    }
-    return null;
-  }
-
-  static chatCompletionStreamResponseFactory(
-    body: OpenAI.ChatCompletionRequest,
-    result: StreamTextResult<{}, string>
-  ): ReadableStream<OpenAI.ChatCompletionResponseChunk> {
-    const stream = new ReadableStream({
-      async start(controller) {
-        const chatId = `chatcmpl-${randomUUID()}`;
-        try {
-          for await (const chunk of result.fullStream) {
-            const openaiChunk = AI_SDK_UTILS.chatCompletionChunkProcessor(
-              chunk,
-              chatId,
-              body.model
-            );
-            if (openaiChunk === null) {
-              continue;
-            }
-            controller.enqueue(openaiChunk);
-          }
-        } catch (error) {
-          controller.error(error);
-        } finally {
-          controller.close();
-        }
-      },
-    });
-    return stream;
-  }
-
-  static chatCompletionNonStreamResponseFactory(
-    reqBody: OpenAI.ChatCompletionRequest,
-    result: GenerateTextResult<{}, string>
-  ): OpenAI.ChatCompletionResponse {
-    const SECOND = 1000;
-    const created = Math.floor(Date.now() / SECOND);
-    return {
-      id: `chatcmpl-${created}`,
-      object: 'chat.completion',
-      created,
-      model: reqBody.model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: result.text,
-            refusal: null,
-            tool_calls: result.toolCalls.map(
-              (toolCall) =>
-                ({
-                  id: toolCall.toolCallId,
-                  type: 'function',
-                  function: {
-                    name: toolCall.toolName,
-                    arguments: String(toolCall.input),
-                  },
-                }) satisfies OpenAI.ChatCompletionResponseToolCall
-            ),
-          },
-          finish_reason: finishReasonMap.get(result.finishReason) ?? 'stop',
-          logprobs: null,
-        },
-      ],
-      usage: {
-        prompt_tokens: result.usage?.inputTokens || 0,
-        completion_tokens: result.usage?.outputTokens || 0,
-        total_tokens: result.usage?.totalTokens || 0,
-      },
-    };
-  }
+  static chatCompletionChunkProcessor = aiSdkChunkToOpenAI;
+  static chatCompletionStreamResponseFactory = aiSdkStreamToOpenAI;
+  static chatCompletionNonStreamResponseFactory =
+    aiSdkNonStreamResponseToOpenAI;
 }

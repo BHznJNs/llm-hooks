@@ -1,5 +1,5 @@
 import { boolean, jsonb, pgTable, serial, text } from 'drizzle-orm/pg-core';
-import type { LlmProvider } from '../utils/llm-client-factory.ts';
+import type { LlmProvider } from 'llm-hooks-sdk';
 
 export const appConfigs = pgTable('app_configs', {
   id: serial('id').primaryKey(),

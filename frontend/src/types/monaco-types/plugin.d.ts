@@ -9,6 +9,7 @@ export type Logger = {
 
 export type PluginArguments<T> = {
   data: T;
+  chatId: string;
   logger: Logger;
   model: LlmModel;
   metadata: Record<string, unknown>;

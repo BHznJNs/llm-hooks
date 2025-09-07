@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { Plugin } from 'llm-hooks-sdk';
 import type { AppConfig } from '../../common/types/config.ts';
 import type { HookType } from '../../common/types/hook.ts';
-import type { Plugin } from '../types/plugin.ts';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 

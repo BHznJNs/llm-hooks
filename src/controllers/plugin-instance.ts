@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PluginManager } from 'live-plugin-manager';
-import type { Plugin } from '../types/plugin.ts';
+import type { Plugin } from 'llm-hooks-sdk';
 import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 import scriptController from './script.ts';

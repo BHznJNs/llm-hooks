@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Plugin } from '../types/plugin.ts';
+import type { Plugin } from 'llm-hooks-sdk';
 import compile from '../utils/compile.ts';
 import { npmInstall } from '../utils/npm.ts';
 import { runtime } from '../utils/runtime.ts';
