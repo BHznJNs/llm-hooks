@@ -1,5 +1,5 @@
 import type { SSEStreamingApi } from 'hono/streaming';
-import { openAiErrorChunkFactory } from 'llm-hooks-sdk';
+import { type OpenAI, openAiErrorChunkFactory } from 'llm-hooks-sdk';
 import type { AppConfig } from '../../common/types/config.ts';
 import HooksHandler from '../hooks.ts';
 

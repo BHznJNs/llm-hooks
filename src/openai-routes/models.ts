@@ -1,4 +1,5 @@
 import type { Context } from 'hono';
+import type { OpenAI } from 'llm-hooks-sdk';
 import appConfigController from '../controllers/app-config.ts';
 import HooksHandler from '../hooks.ts';
 

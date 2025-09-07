@@ -19,6 +19,7 @@ import {
   aiSdkNonStreamResponseToOpenAI,
   aiSdkStreamToOpenAI,
   type LlmClient,
+  type OpenAI,
 } from 'llm-hooks-sdk';
 import { nullToUndefined } from './type-utils.ts';
 
