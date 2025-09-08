@@ -1,4 +1,4 @@
-import { Outlet } from '@tanstack/react-router';
+import { Outlet, useMatchRoute } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ToastProvider from './providers/ToastProvider';
@@ -10,6 +10,9 @@ export default function App() {
   const handleChangeRef = useRef<((e: MediaQueryListEvent) => void) | null>(
     null
   );
+
+  const matchRoute = useMatchRoute();
+  const hideSidebar = !matchRoute({ to: '/login' });
 
   useEffect(() => {
     if (mediaQueryRef.current && handleChangeRef.current) {
@@ -57,7 +60,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
+      {hideSidebar && <Sidebar />}
 
       <main className="flex-1 overflow-y-auto">
         <Outlet />

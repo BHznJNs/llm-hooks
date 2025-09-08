@@ -12,7 +12,7 @@ import { useTranslation } from '../lib/i18n';
 import { getRouteConfig } from '../lib/routes-config';
 import { useLanguageStore } from '../stores/language-store';
 import { useThemeStore } from '../stores/theme-store';
-import type { Language } from '../types';
+import type { AppTheme, Language } from '../types';
 import { Button } from './ui/Button';
 
 export default function Sidebar() {
@@ -22,12 +22,18 @@ export default function Sidebar() {
   const routes = getRouteConfig(language);
   const location = useLocation();
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = (newTheme: AppTheme) => {
     setTheme(newTheme);
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value as Language);
+  };
+
+  const themeButtonStyles = (targetTheme: AppTheme) => {
+    return theme === targetTheme
+      ? 'bg-blue-600 text-white dark:text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
+      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700';
   };
 
   return (
@@ -69,11 +75,7 @@ export default function Sidebar() {
               size="small"
               variant="tertiary"
               onClick={() => handleThemeChange('light')}
-              className={`rounded p-2 ${
-                theme === 'light'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
+              className={themeButtonStyles('light')}
               aria-label="Light theme"
             >
               <Sun className="h-4 w-4" />
@@ -82,11 +84,7 @@ export default function Sidebar() {
               size="small"
               variant="tertiary"
               onClick={() => handleThemeChange('dark')}
-              className={`rounded p-2 ${
-                theme === 'dark'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
+              className={themeButtonStyles('dark')}
               aria-label="Dark theme"
             >
               <Moon className="h-4 w-4" />
@@ -95,11 +93,7 @@ export default function Sidebar() {
               size="small"
               variant="tertiary"
               onClick={() => handleThemeChange('system')}
-              className={`rounded p-2 ${
-                theme === 'system'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
+              className={themeButtonStyles('system')}
               aria-label="System theme"
             >
               <Monitor className="h-4 w-4" />

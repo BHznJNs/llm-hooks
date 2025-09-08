@@ -4,13 +4,20 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import App from './App';
-import HooksPage from './pages/HooksPage';
-import LogsPage from './pages/LogsPage';
-import PluginsPage from './pages/PluginsPage';
-import SettingsPage from './pages/SettingsPage';
+import HooksPage from './pages/HooksPage.tsx';
+import LoginPage from './pages/LoginPage.tsx';
+import LogsPage from './pages/LogsPage.tsx';
+import PluginsPage from './pages/PluginsPage.tsx';
+import SettingsPage from './pages/SettingsPage.tsx';
 
 const rootRoute = createRootRoute({
   component: App,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
 });
 
 const indexRoute = createRoute({
@@ -38,6 +45,7 @@ const pluginsRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
+  loginRoute,
   indexRoute,
   logsRoute,
   settingsRoute,

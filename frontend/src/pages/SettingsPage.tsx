@@ -1,10 +1,10 @@
 import { Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FormField } from '../components/settings/FormField';
-import { PasswordField } from '../components/settings/PasswordField';
 import { ProviderSelect } from '../components/settings/ProviderSelect';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PasswordInput } from '../components/ui/PasswordInput';
 import { useTranslation } from '../lib/i18n';
 import { useLanguageStore } from '../stores/language-store';
 import { useSettingsStore } from '../stores/settings-store';
@@ -174,7 +174,7 @@ export default function SettingsPage() {
           required
           htmlFor="assistant-api-key"
         >
-          <PasswordField
+          <PasswordInput
             id="assistant-api-key"
             value={assistant!.apiKey}
             onChange={(value) => updateAssistant({ apiKey: value })}

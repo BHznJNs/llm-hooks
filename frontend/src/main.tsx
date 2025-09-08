@@ -1,4 +1,5 @@
 import './index.css';
+import './utils/auth-fetch.ts';
 import { RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

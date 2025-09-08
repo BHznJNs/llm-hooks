@@ -9,9 +9,9 @@ import settings from './settings.ts';
 
 const api = new Hono();
 
-api.use('*', cookieToBearer);
+api.use('/*', cookieToBearer);
 api.use(
-  '*',
+  '/*',
   bearerAuth({
     async verifyToken(sid: string, _) {
       return await verifySid(sid, getAuthToken());

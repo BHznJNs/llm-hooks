@@ -13,7 +13,7 @@ auth.post('/login', async (c) => {
   const token = extractAuthToken(c);
   if (!(token && isValidAuthToken(token))) {
     c.status(UNAUTHORIZED);
-    return c.json({ error: 'Unauthorized' });
+    return c.json({ error: 'Not a valid token' });
   }
 
   const sid = await createSid(cookieTTL, getAuthToken());
@@ -24,6 +24,11 @@ auth.post('/login', async (c) => {
     path: '/api',
     maxAge: cookieTTL,
   });
+  return c.json(null);
+});
+
+auth.post('/logout', (c) => {
+  setCookie(c, 'auth', '', { maxAge: 0 });
   return c.json(null);
 });
 

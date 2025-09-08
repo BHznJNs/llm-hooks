@@ -2,23 +2,23 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '../../lib/i18n';
 import { useLanguageStore } from '../../stores/language-store';
-import { Input } from '../ui/Input';
+import { Input, type InputProps } from './Input';
 
-type PasswordFieldProps = {
+type PasswordInputProps = {
   id: string;
   value: string;
-  onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
-};
+} & InputProps;
 
-export function PasswordField({
+export function PasswordInput({
   id,
   value,
-  onChange,
   placeholder,
   required,
-}: PasswordFieldProps) {
+  onChange,
+  ...props
+}: PasswordInputProps) {
   const { language } = useLanguageStore();
   const { t } = useTranslation(language);
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +33,7 @@ export function PasswordField({
         type={showPassword ? 'text' : 'password'}
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         placeholder={placeholder}
         required={required}
         suffix={
@@ -50,6 +50,7 @@ export function PasswordField({
             )}
           </button>
         }
+        {...props}
       />
     </div>
   );

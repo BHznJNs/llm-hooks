@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
-type InputProps = {
+export type InputProps = {
   variant?: 'small' | 'normal';
   prefix?: ReactNode;
   suffix?: ReactNode;
@@ -13,7 +13,7 @@ type InputProps = {
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
-};
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix' | 'suffix'>;
 
 export function Input({
   variant = 'normal',
