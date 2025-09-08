@@ -1,7 +1,7 @@
 import { type Context, Hono } from 'hono';
-import type { HookType } from '../../common/types/hook.ts';
-import appConfigController from '../controllers/app-config.ts';
-import pluginConfigController from '../controllers/plugin-config.ts';
+import type { HookType } from '../../../common/types/hook.ts';
+import appConfigController from '../../controllers/app-config.ts';
+import pluginConfigController from '../../controllers/plugin-config.ts';
 
 const hooks = new Hono();
 

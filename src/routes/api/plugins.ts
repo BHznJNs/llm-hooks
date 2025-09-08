@@ -1,8 +1,8 @@
 import { type Context, Hono } from 'hono';
-import appConfigController from '../controllers/app-config.ts';
-import pluginConfigController from '../controllers/plugin-config.ts';
-import pluginInstanceController from '../controllers/plugin-instance.ts';
-import { logger } from '../utils/logger.ts';
+import appConfigController from '../../controllers/app-config.ts';
+import pluginConfigController from '../../controllers/plugin-config.ts';
+import pluginInstanceController from '../../controllers/plugin-instance.ts';
+import { logger } from '../../utils/logger.ts';
 
 const plugins = new Hono();
 const moduleLogger = logger.moduleLogger('plugins');

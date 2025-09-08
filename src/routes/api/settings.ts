@@ -1,6 +1,6 @@
 import { type Context, Hono } from 'hono';
-import type { LlmProvider } from '../../common/types/config.ts';
-import appConfigController from '../controllers/app-config.ts';
+import type { LlmProvider } from '../../../common/types/config.ts';
+import appConfigController from '../../controllers/app-config.ts';
 
 const settings = new Hono();
 
