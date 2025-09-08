@@ -177,7 +177,7 @@ export default function SettingsPage() {
           <PasswordInput
             id="assistant-api-key"
             value={assistant!.apiKey}
-            onChange={(value) => updateAssistant({ apiKey: value })}
+            onChange={(e) => updateAssistant({ apiKey: e.target.value })}
             required
           />
         </FormField>
