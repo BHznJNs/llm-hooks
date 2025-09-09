@@ -1,13 +1,37 @@
 import { spawn } from 'node:child_process';
+import { platform } from 'node:os';
 
-const NPM_EXEC_TIMEOUT = 30_000;
+const NPM_EXEC_TIMEOUT = 60_000;
 
 export function npmInstall(dependencies: string[], cwd: string): Promise<void> {
-  const args = ['install', '--silent', ...dependencies];
+  if (!dependencies.length) {
+    return new Promise((resolve) => resolve());
+  }
+
+  const networkOptimizedArgs = [
+    '--no-audit',
+    '--no-fund',
+    '--prefer-offline',
+    '--progress=false',
+  ];
+  const args = [
+    'install',
+    '--silent',
+    ...networkOptimizedArgs,
+    ...dependencies,
+  ];
+
   return new Promise((resolve, reject) => {
-    const child = spawn('npm', args, { cwd, stdio: 'inherit', shell: true });
+    const child = spawn('npm', args, {
+      cwd,
+      shell: true,
+      stdio: 'inherit',
+      windowsVerbatimArguments: platform() === 'win32',
+    });
     const timer = setTimeout(() => {
-      child.kill();
+      const childSecondKillTimeout = 5000;
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), childSecondKillTimeout);
       reject(new Error('Timeout waiting for npm install'));
     }, NPM_EXEC_TIMEOUT);
 

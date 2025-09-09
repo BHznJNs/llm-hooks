@@ -4,7 +4,7 @@ import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 const pluginsApiBase = `${API_BASE}/plugins`;
 
 // since the `npm install` command requires time, we need to give it extra timeout here.
-const NPM_INSTALL_EXTRA_TIMEOUT_MS = 30_000;
+const NPM_INSTALL_EXTRA_TIMEOUT_MS = 60_000;
 const NPM_INSTALL_TIMEOUT = API_TIMEOUT_MS + NPM_INSTALL_EXTRA_TIMEOUT_MS;
 
 export const pluginsApi = {
