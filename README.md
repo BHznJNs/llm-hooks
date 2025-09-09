@@ -18,6 +18,7 @@ Hook Your LLM Calls!
 docker run -d --name llm-hooks \
   -p 5126:5126 \
   -e DATABASE_URL=postgres://username:password@hostname:port/database \
+  -e AUTH_TOKEN=sk-123456 \
   ghcr.io/llm-hooks/llm-hooks:latest
 ```
 
