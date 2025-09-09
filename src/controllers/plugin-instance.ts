@@ -189,6 +189,7 @@ class PluginInstanceController {
         this.logger.warn(`Delete plugin failed: ${error}`);
       });
     }
+    this.cache.delete(name);
   }
 }
 export default new PluginInstanceController();

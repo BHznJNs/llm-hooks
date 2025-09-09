@@ -247,7 +247,7 @@ npm run dev
 
 项目支持动态插件加载，插件可以声明依赖，在运行时会自动安装对应依赖。
 
-#### 插件配置类型（已优化）
+#### 插件配置类型
 
 ```typescript
 export type PluginConfig = {

@@ -169,6 +169,8 @@ class PluginConfigController {
       case 'docker': {
         const { default: dbOperator } = await import('../db/operator.ts');
         await dbOperator.updatePluginConfig(name, config);
+        const currentConfig = (await this.loadBatch([name]))[name]!;
+        this.cache.set(name, { ...currentConfig, ...config });
         break;
       }
       case 'local': {
