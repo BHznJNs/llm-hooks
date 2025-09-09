@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Plugin } from 'llm-hooks-sdk';
 import compile from '../utils/compile.ts';
+import { logger } from '../utils/logger.ts';
 import { npmInstall } from '../utils/npm.ts';
 import { runtime } from '../utils/runtime.ts';
 
@@ -31,6 +32,8 @@ function collectDeps(scriptContent: string): string[] {
 }
 
 class ScriptController {
+  private readonly logger = logger.moduleLogger('script-controller');
+
   /**
    * @description
    * Use this function when the script file exists.
@@ -42,23 +45,47 @@ class ScriptController {
   async load(name: string): Promise<Plugin | null> {
     const scriptPath = scriptPluginPathFactory(name);
     try {
-      fs.access(scriptPath, fs.constants.R_OK);
+      await fs.access(scriptPath, fs.constants.R_OK);
     } catch {
       throw new Error('Target script not found.');
     }
 
-    let compiledFilePath: string | null = null;
-    if (scriptPath.endsWith('.ts')) {
-      compiledFilePath = await compile(scriptPath);
+    let targetPluginModulePath: string;
+    if (scriptPath.endsWith('.js')) {
+      targetPluginModulePath = scriptPath;
+    } else {
+      const compiledFilePath = await compile(scriptPath);
       if (!compiledFilePath) {
         return null;
       }
+      targetPluginModulePath = compiledFilePath;
     }
-    const targetPluginModulePath = scriptPath.endsWith('.ts')
-      ? compiledFilePath!
-      : scriptPath;
-    const module = await import(pathToFileURL(targetPluginModulePath).href);
+
+    // For ES modules, we need to invalidate the import cache
+    // by appending a query parameter with timestamp
+    const moduleUrl = pathToFileURL(targetPluginModulePath).href;
+    const cacheBustUrl = `${moduleUrl}?t=${Date.now()}`;
+
+    const module = await import(cacheBustUrl);
     return module.default;
+  }
+
+  async loadContent(name: string): Promise<string | null> {
+    const pluginModulePath = path.join(scriptPluginDirectory, name);
+    try {
+      await fs.access(pluginModulePath, fs.constants.R_OK);
+    } catch {
+      if (runtime !== 'docker') {
+        this.logger.warn(`Plugin not found: ${name}`);
+        return null;
+      }
+      const { default: dbOperator } = await import('../db/operator.ts');
+      const pluginScriptContent = await dbOperator.fetchScript(name);
+      if (pluginScriptContent) {
+        await fs.writeFile(pluginModulePath, pluginScriptContent);
+      }
+    }
+    return await fs.readFile(pluginModulePath, 'utf8');
   }
 
   async install(name: string, content: string): Promise<void> {

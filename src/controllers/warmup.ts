@@ -1,7 +1,10 @@
+import { logger } from '../utils/logger.ts';
 import { runtime } from '../utils/runtime.ts';
 import appConfigController from './app-config.ts';
 import pluginConfigController from './plugin-config.ts';
 import pluginInstanceController from './plugin-instance.ts';
+
+const moduleLogger = logger.moduleLogger('warmup');
 
 /**
  * Warmup controllers by accessing datas,
@@ -22,6 +25,7 @@ export default async function () {
 
   const uniquePluginNames = Array.from(new Set(pluginNames));
   for (const name of uniquePluginNames) {
+    moduleLogger.info(`Plugin loaded: "${name}"`);
     await pluginInstanceController.load(name);
   }
 }

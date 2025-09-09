@@ -2,11 +2,11 @@
 import { Jwt } from 'hono/utils/jwt';
 
 export async function createSid(
-  ttl_second: number,
+  ttl_sec: number,
   token: string
 ): Promise<string> {
   const sid = await Jwt.sign(
-    { exp: Math.floor(Date.now() / 1000) + ttl_second },
+    { exp: Math.floor(Date.now() / 1000) + ttl_sec },
     token
   );
   return sid;

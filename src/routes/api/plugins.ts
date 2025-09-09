@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono';
 import appConfigController from '../../controllers/app-config.ts';
 import pluginConfigController from '../../controllers/plugin-config.ts';
 import pluginInstanceController from '../../controllers/plugin-instance.ts';
+import scriptController from '../../controllers/script.ts';
 import { logger } from '../../utils/logger.ts';
 
 const plugins = new Hono();
@@ -27,11 +28,11 @@ plugins.get('/has/:plugin_name', async (c: Context) => {
 
 plugins.get('/content/:plugin_name', async (c: Context) => {
   const pluginName = c.req.param('plugin_name');
-  const pluginContent = await pluginInstanceController.loadContent(pluginName);
+  const pluginContent = await scriptController.loadContent(pluginName);
   if (!pluginContent) {
     throw new Error('Failed to load plugin content');
   }
-  moduleLogger.info(`Loaded plugin content: ${pluginName}`);
+  moduleLogger.info(`Loaded plugin content: "${pluginName}"`);
   return c.json({ content: pluginContent });
 });
 

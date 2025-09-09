@@ -3,6 +3,10 @@ import { API_BASE, API_TIMEOUT_MS } from './index.ts';
 
 const pluginsApiBase = `${API_BASE}/plugins`;
 
+// since the `npm install` command requires time, we need to give it extra timeout here.
+const NPM_INSTALL_TIMEOUT_SEC = 30;
+const NPM_INSTALL_TIMEOUT = API_TIMEOUT_MS + NPM_INSTALL_TIMEOUT_SEC * 1000;
+
 export const pluginsApi = {
   async fetchAll(): Promise<Record<string, PluginConfig>> {
     const response = await fetch(pluginsApiBase, {
@@ -38,7 +42,7 @@ export const pluginsApi = {
   }): Promise<void> {
     const response = await fetch(`${pluginsApiBase}`, {
       method: 'POST',
-      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      signal: AbortSignal.timeout(NPM_INSTALL_TIMEOUT),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -56,7 +60,7 @@ export const pluginsApi = {
   }): Promise<void> {
     const response = await fetch(`${pluginsApiBase}`, {
       method: 'PUT',
-      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      signal: AbortSignal.timeout(NPM_INSTALL_TIMEOUT),
       headers: {
         'Content-Type': 'application/json',
       },

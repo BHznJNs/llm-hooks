@@ -107,26 +107,6 @@ class PluginInstanceController {
     }
   }
 
-  async loadContent(name: string): Promise<string | null> {
-    if (isPluginAnNpmPackage(name)) {
-      return null;
-    }
-    const pluginModulePath = path.join(scriptPluginDirectory, name);
-    try {
-      await fs.access(pluginModulePath, fs.constants.R_OK);
-    } catch {
-      if (runtime !== 'docker') {
-        return null;
-      }
-      const { default: dbOperator } = await import('../db/operator.ts');
-      const pluginScriptContent = await dbOperator.fetchScript(name);
-      if (pluginScriptContent) {
-        await fs.writeFile(pluginModulePath, pluginScriptContent);
-      }
-    }
-    return await fs.readFile(pluginModulePath, 'utf8');
-  }
-
   async load(name: string): Promise<Plugin | null> {
     if (this.cache.has(name)) {
       return this.cache.get(name)!;
@@ -157,6 +137,8 @@ class PluginInstanceController {
     name: string,
     content?: string // only for script plugin
   ): Promise<void> {
+    // force to clear the plugin instance in cache and the plugin script files
+    await this.delete(name);
     try {
       switch (runtime) {
         case 'docker':
@@ -171,7 +153,6 @@ class PluginInstanceController {
       return;
     }
 
-    this.cache.delete(name); // force to refresh cache
     const plugin = await this.load(name);
     if (plugin === null) {
       this.logger.error(`Failed to load plugin after save: ${name}`);
@@ -185,6 +166,13 @@ class PluginInstanceController {
       await pluginManager.uninstall(name);
     } else {
       const pluginModulePath = path.join(scriptPluginDirectory, name);
+      if (pluginModulePath.endsWith('.ts')) {
+        const jsFileName = `${path.basename(name, '.ts')}.js`;
+        const jsFilePath = path.join(scriptPluginDirectory, jsFileName);
+        await fs.unlink(jsFilePath).catch((_) => {
+          /** Do not care the javascript script file unlink error here */
+        });
+      }
       await fs.unlink(pluginModulePath).catch((error) => {
         this.logger.warn(`Delete plugin failed: ${error}`);
       });

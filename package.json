@@ -25,7 +25,7 @@
     "env-paths": "^3.0.0",
     "hono": "^4.9.2",
     "live-plugin-manager": "^1.1.0",
-    "llm-hooks-sdk": "^1.1.5",
+    "llm-hooks-sdk": "^1.1.6",
     "openai": "^5.15.0",
     "pg": "^8.16.3",
     "pino": "^9.9.0",
