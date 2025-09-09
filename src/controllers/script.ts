@@ -71,7 +71,7 @@ class ScriptController {
   }
 
   async loadContent(name: string): Promise<string | null> {
-    const pluginModulePath = path.join(scriptPluginDirectory, name);
+    const pluginModulePath = scriptPluginPathFactory(name);
     try {
       await fs.access(pluginModulePath, fs.constants.R_OK);
     } catch {
@@ -100,6 +100,31 @@ class ScriptController {
     await fs.writeFile(scriptPluginPath, content);
     const dependencies = collectDeps(content);
     await npmInstall(dependencies, scriptPluginDirectory);
+  }
+
+  async exists(name: string): Promise<boolean> {
+    const pluginModulePath = scriptPluginPathFactory(name);
+    try {
+      await fs.access(pluginModulePath, fs.constants.R_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async delete(name: string): Promise<void> {
+    const pluginModulePath = scriptPluginPathFactory(name);
+    if (pluginModulePath.endsWith('.ts')) {
+      // if is a typescript plugin, delete the compiled javascript file.
+      const jsFileName = `${path.basename(name, '.ts')}.js`;
+      const jsFilePath = scriptPluginPathFactory(jsFileName);
+      await fs.unlink(jsFilePath).catch((_) => {
+        /** Do not care the javascript script file unlink error here */
+      });
+    }
+    await fs.unlink(pluginModulePath).catch((error) => {
+      this.logger.warn(`Delete plugin failed: ${error}`);
+    });
   }
 }
 

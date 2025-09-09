@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PluginManager } from 'live-plugin-manager';
 import type { Plugin } from 'llm-hooks-sdk';
@@ -16,16 +15,6 @@ const pluginManager = await (async () => {
         pluginsPath: path.join(appData, 'node_modules/plugins'),
         versionsPath: path.join(appData, 'node_modules/versions'),
       });
-    }
-  }
-})();
-const scriptPluginDirectory = await (async () => {
-  switch (runtime) {
-    case 'docker':
-      return '/tmp/plugins/';
-    case 'local': {
-      const { default: appData } = await import('../utils/app-data.ts');
-      return path.join(appData, 'plugins');
     }
   }
 })();
@@ -59,10 +48,8 @@ class PluginInstanceController {
       return await loadNpmPlugin(name);
     }
     const { default: dbOperator } = await import('../db/operator.ts');
-    const pluginModulePath = path.join(scriptPluginDirectory, name);
-    try {
-      await fs.access(pluginModulePath, fs.constants.R_OK);
-    } catch {
+    const isPluginScriptExist = await scriptController.exists(name);
+    if (!isPluginScriptExist) {
       const pluginScriptContent = await dbOperator.fetchScript(name);
       if (!pluginScriptContent) {
         return null;
@@ -77,11 +64,8 @@ class PluginInstanceController {
       return await loadNpmPlugin(name);
     }
 
-    const pluginModulePath = path.join(scriptPluginDirectory, name);
-    try {
-      await fs.access(pluginModulePath, fs.constants.R_OK);
-    } catch {
-      this.logger.error(`Plugin not found: ${name}`);
+    const isPluginScriptExist = await scriptController.exists(name);
+    if (!isPluginScriptExist) {
       return null;
     }
     return await scriptController.load(name);
@@ -165,17 +149,7 @@ class PluginInstanceController {
     if (isPluginAnNpmPackage(name)) {
       await pluginManager.uninstall(name);
     } else {
-      const pluginModulePath = path.join(scriptPluginDirectory, name);
-      if (pluginModulePath.endsWith('.ts')) {
-        const jsFileName = `${path.basename(name, '.ts')}.js`;
-        const jsFilePath = path.join(scriptPluginDirectory, jsFileName);
-        await fs.unlink(jsFilePath).catch((_) => {
-          /** Do not care the javascript script file unlink error here */
-        });
-      }
-      await fs.unlink(pluginModulePath).catch((error) => {
-        this.logger.warn(`Delete plugin failed: ${error}`);
-      });
+      await scriptController.delete(name);
     }
     this.cache.delete(name);
   }

@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.0",
-    "ai": "^5.0.18",
+    "ai": "^5.0.39",
     "drizzle-orm": "^0.44.4",
     "env-paths": "^3.0.0",
     "hono": "^4.9.2",
