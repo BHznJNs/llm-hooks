@@ -9,8 +9,13 @@ Hook Your LLM Calls!
   - Before the upstream request
   - The upstream chunks arrived when using stream mode
   - After the upstream responses
-- Programatic plugins
-- OpenAI, Google Gemini, Antropic upstream supported
+- Programmatic plugins
+- Assistant model empowered plugins
+- OpenAI, Google Gemini, Anthropic upstream supported
+
+## Plugin Examples
+
+See here: [examples](https://github.com/LLM-Hooks/examples)
 
 ## Deploy
 
