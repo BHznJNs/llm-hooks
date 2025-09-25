@@ -37,7 +37,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-white p-4 shadow-md dark:border dark:border-gray-700 dark:bg-gray-800">
+    <div className="z-10 flex h-screen w-64 flex-col bg-white p-4 shadow-md dark:border dark:border-gray-700 dark:bg-gray-800">
       <div className="mb-8 font-bold text-2xl dark:text-white">LLM Hooks</div>
 
       <nav className="flex-1">
